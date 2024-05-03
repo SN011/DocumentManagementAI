@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Speech to Text</title>
+</head>
+<body>
+    <button id="start">Start Recording</button>
+    <button id="stop" disabled>Stop Recording</button>
+    <p id="transcription"></p>
+
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+
+        document.getElementById('start').onclick = function() {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.start();
+
+                    mediaRecorder.addEventListener('dataavailable', event => {
+                        audioChunks.push(event.data);
+                    });
+
+                    mediaRecorder.addEventListener('stop', () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' }); // Ensure the blob type is set correctly
+                        const formData = new FormData();
+                        formData.append('audio', audioBlob, 'file.wav'); // Properly append the blob to FormData
+
+                        fetch('/transcribe', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            document.getElementById('transcription').textContent = data.transcription;
+                        })
+                        .catch(console.error);
+
+                        audioChunks = [];
+                    });
+
+                    document.getElementById('stop').disabled = false;
+                })
+                .catch(console.error);
+        };
+
+        document.getElementById('stop').onclick = function() {
+            mediaRecorder.stop();
+            document.getElementById('stop').disabled = true;
+        };
+    </script>
+</body>
+</html>

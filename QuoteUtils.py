@@ -247,6 +247,7 @@ def parse_quote(quote_str):
 
 
 def initialize_quote_bot(client:Groq, llm:ChatGroq):
+    
     system_msg = """
                 You are an expert at questioning the client about their renovation or contstruction project quote.
                 Please keep in mind all of these things when asking questions: ask the user specific info needed for the quote, such as:
@@ -404,7 +405,7 @@ def initialize_quote_bot(client:Groq, llm:ChatGroq):
                 {
                     "role": "system",
                     "content": """You are an expert in PREPARING A REAL ESTATE QUOTE IN PROPER FORMAT from ONLY what is in the user's request, given a web search synthesis as one input and user's request as another input.\
-                        YOU ARE TO FOLLOW THIS TEMPLATE AT ALL TIMES - EXACTLY ONLY THIS FORMAT - \
+                        YOU ARE TO FOLLOW THIS TEMPLATE AT ALL TIMES - EXACTLY ONLY ONLY ONLY ONLY ONLY ONLY ONLY ONLY!!!!!!! IN THIS FORMAT - OR ELSE YOU WILL BE SAD FOR THE REST OF YOUR LIFE \
                             ALL COMPONENTS AND ITEMIZED ITEMS SHALL BE LEFT EXACTLY AS IN INPUT (IMPORTANT: ITEMIZED COSTS IN THE INPUT SHALL BE LEFT ALONE; DO NOT LUMP THEM IN MISCELLANEOUS): \
                             **Project Overview:**
     - Project Description: [Brief description of the project scope and objectives]
@@ -419,10 +420,10 @@ def initialize_quote_bot(client:Groq, llm:ChatGroq):
     2. **Material Costs:**
     - Total Material Cost: $[Total Material Cost]
     - Itemized Costs:
-        + [Material 1]: $[Cost]
-        + [Material 2]: $[Cost]
-        + [Material 3]: $[Cost]
-        + [... ALL OTHER MATERIALS MUST FOLLOW THIS FORMAT ]
+        + [Material 1 with any lengths and areas]: $[Cost]
+        + [Material 2 with any lengths and areas]: $[Cost]
+        + [Material 3 with any lengths and areas]: $[Cost]
+        + [... ALL OTHER MATERIALS MUST FOLLOW THIS FORMAT. THE COST IS THE ONLY THING AFTER COLON!!!]
         
 
     **Total Estimated Cost:**
@@ -459,8 +460,11 @@ def initialize_quote_bot(client:Groq, llm:ChatGroq):
                 {
                     "role": "system",
                     "content": "You are an expert in \
-                        correcting an input. YOU MUST START THE RESPONSE WITH 'RENOVATION QUOTE DOCUMENT' heading. ADDRESS MUST BE INCLUDED IT WILL BE THERE IN THE CONTEXT GIVEN TO YOU!."
-
+                        correcting an input. YOU MUST START THE RESPONSE WITH 'RENOVATION QUOTE DOCUMENT' heading.\
+                              ADDRESS MUST BE INCLUDED IT WILL BE THERE IN THE CONTEXT GIVEN TO YOU!\
+                                YOU MUST INCLUDE ALLLLLLLLLLLLLLLLLLLLLLL ITEMIZED COSTS NO MATTER HOWEVER LONG THE LIST OF ITEMIZED COSTS IS !!!! THIS IS A \
+                                    RENOVATION QUOTE AND WE NEED TO KNOW EVERY SINGLE DAMN COST!!!!"
+                        
                 },
 
                 {
@@ -478,5 +482,17 @@ def initialize_quote_bot(client:Groq, llm:ChatGroq):
             model="llama3-70b-8192",
         )
     corrector_output = (corrector.choices[0].message.content)
-    print(corrector_output)
+    print('CORRECTED MATH OUTPUT\n\n\n\n\n\n',corrector_output)
     return corrector_output
+
+
+from contextlib import contextmanager
+class CtxMgr:
+    @contextmanager
+    def temporary_temperature(self,llm:ChatGroq, new_temp:float):
+        original_temp = llm.temperature  # Store the original temperature
+        llm.temperature = new_temp  # Set the temperature to the temporary value
+        try:
+            yield  # Pause here and allow the `with` block to execute
+        finally:
+            llm.temperature = original_temp

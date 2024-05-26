@@ -126,7 +126,7 @@
                 callButton.textContent = "End Call";
                 callActive = true;
                 aiSpeaking = true;
-                document.getElementById('response').innerText = "Call started. AI is speaking now.";
+                //document.getElementById('response').innerText = "Call started. AI is speaking now.";
                 startAiSpeaking();
             } else {
                 // End the call
@@ -200,7 +200,7 @@
 
         document.addEventListener('keydown', function(event) {
             if (event.key === 'p' && callActive && !aiSpeaking) {
-                console.log("AI is speaking now");
+                //console.log("AI is speaking now");
                 startAiSpeaking();
             }
         });

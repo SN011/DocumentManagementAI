@@ -295,9 +295,13 @@ def initialize_quote_bot(client:Groq, llm:ChatGroq):
 
 
     chat_history = []
+    thing = True
+    client_req = ''
     while True:
 
-
+        if thing:
+            client_req = 'Hello!'
+        thing = False
         client_req = str(input())
         quotebot = client.chat.completions.create(
             messages=[
@@ -406,7 +410,7 @@ def initialize_quote_bot(client:Groq, llm:ChatGroq):
                     "role": "system",
                     "content": """You are an expert in PREPARING A REAL ESTATE QUOTE IN PROPER FORMAT from ONLY what is in the user's request, given a web search synthesis as one input and user's request as another input.\
                         YOU ARE TO FOLLOW THIS TEMPLATE AT ALL TIMES - EXACTLY ONLY ONLY ONLY ONLY ONLY ONLY ONLY ONLY!!!!!!! IN THIS FORMAT - OR ELSE YOU WILL BE SAD FOR THE REST OF YOUR LIFE \
-                            ALL COMPONENTS AND ITEMIZED ITEMS SHALL BE LEFT EXACTLY AS IN INPUT (IMPORTANT: ITEMIZED COSTS IN THE INPUT SHALL BE LEFT ALONE; DO NOT LUMP THEM IN MISCELLANEOUS): \
+                            ALL COMPONENTS AND ITEMIZED ITEMS SHALL BE LEFT EXACTLY AS IN INPUT (IMPORTANT: ITEMIZED COSTS IN THE INPUT SHALL BE LEFT ALONE; DO NOT LUMP THEM IN MISCELLANEOUS) FOLLOW INSTRUCTIONS FOLLOW INSTRCUTIONS I WILL GET REALLY MAD IF U DONT: \
                             **Project Overview:**
     - Project Description: [Brief description of the project scope and objectives]
     - Length of Time for Project [User's desire for how much time he wants to do renovations]
@@ -420,9 +424,9 @@ def initialize_quote_bot(client:Groq, llm:ChatGroq):
     2. **Material Costs:**
     - Total Material Cost: $[Total Material Cost]
     - Itemized Costs:
-        + [Material 1 with any lengths and areas]: $[Cost]
-        + [Material 2 with any lengths and areas]: $[Cost]
-        + [Material 3 with any lengths and areas]: $[Cost]
+        + [Material 1 and ALL EXTRANEOUS STUFF for it]: $[Cost]
+        + [Material 2 and ALL EXTRANEOUS STUFF for it]: $[Cost]
+        + [Material 3 and ALL EXTRANEOUS STUFF for it]: $[Cost]
         + [... ALL OTHER MATERIALS MUST FOLLOW THIS FORMAT. THE COST IS THE ONLY THING AFTER COLON!!!]
         
 

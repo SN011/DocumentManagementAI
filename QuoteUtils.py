@@ -251,7 +251,7 @@ def initialize_quote_bot(client:Groq, llm:ChatGroq):
     system_msg = """
                 You are an expert at questioning the client about their renovation or contstruction project quote.
                 Please keep in mind all of these things when asking questions: ask the user specific info needed for the quote, such as:
-                IMPORTANT!: YOUR NAME IS MARVIN! you must say it when user starts talking to you.
+                IMPORTANT!: YOUR NAME IS MARVIN! you must say it when you speak for the FIRST time only! never again.
                     1.Property Details:
                     Address and location of the property.
                     Type of property (e.g., residential, commercial).
@@ -295,14 +295,13 @@ def initialize_quote_bot(client:Groq, llm:ChatGroq):
 
 
     chat_history = []
-    thing = True
-    client_req = ''
+    
+    
     while True:
 
-        if thing:
-            client_req = 'Hello!'
-        thing = False
+        
         client_req = str(input())
+        print(client_req)
         quotebot = client.chat.completions.create(
             messages=[
 
@@ -314,7 +313,7 @@ def initialize_quote_bot(client:Groq, llm:ChatGroq):
 
                 {
                     "role": "user",
-                    "content": client_req + "Chat History for your own context and info - DONT ASK A QUESTION IF THE ANSWER IS ALREADY IN CHAT HISTORY: " + str(chat_history)
+                    "content": "CLIENT'S REQUEST: " + client_req + " | Chat History for your own context and info - DONT ASK A QUESTION IF THE ANSWER IS ALREADY IN CHAT HISTORY: " + str(chat_history)
                 }
             ],
 
@@ -322,7 +321,7 @@ def initialize_quote_bot(client:Groq, llm:ChatGroq):
         )
         output = (quotebot.choices[0].message.content)
         print(output)
-        chat_history.append(output)
+        chat_history.append("CLIENT'S REQUEST: " + client_req + " | YOUR RESPONSE: " + output)
         if('hehehe' in output.lower()): break
 
 
@@ -410,7 +409,7 @@ def initialize_quote_bot(client:Groq, llm:ChatGroq):
                     "role": "system",
                     "content": """You are an expert in PREPARING A REAL ESTATE QUOTE IN PROPER FORMAT from ONLY what is in the user's request, given a web search synthesis as one input and user's request as another input.\
                         YOU ARE TO FOLLOW THIS TEMPLATE AT ALL TIMES - EXACTLY ONLY ONLY ONLY ONLY ONLY ONLY ONLY ONLY!!!!!!! IN THIS FORMAT - OR ELSE YOU WILL BE SAD FOR THE REST OF YOUR LIFE \
-                            ALL COMPONENTS AND ITEMIZED ITEMS SHALL BE LEFT EXACTLY AS IN INPUT (IMPORTANT: ITEMIZED COSTS IN THE INPUT SHALL BE LEFT ALONE; DO NOT LUMP THEM IN MISCELLANEOUS) FOLLOW INSTRUCTIONS FOLLOW INSTRCUTIONS I WILL GET REALLY MAD IF U DONT: \
+                            ALL COMPONENTS AND ITEMIZED ITEMS SHALL BE LEFT EXACTLY AS IN INPUT. IMPORTANT: ITEMIZED COSTS IN THE INPUT SHALL BE ENUMERATED NO MATTER WHAT! FOLLOW INSTRUCTIONS FOLLOW INSTRCUTIONS I WILL GET REALLY MAD IF U DONT: \
                             **Project Overview:**
     - Project Description: [Brief description of the project scope and objectives]
     - Length of Time for Project [User's desire for how much time he wants to do renovations]

@@ -34,7 +34,7 @@
 
         .name-tag {
             position: absolute;
-            top: -40px;
+            top: -70px;  /* Adjusted to avoid collision with the orb */
             left: 50%;
             transform: translateX(-50%);
             color: #00FFFF;
@@ -43,7 +43,7 @@
         }
 
         .vibrating {
-            animation: vibrate 0.1s infinite;
+            animation: vibrate 0.2s linear infinite;
         }
 
         @keyframes float {
@@ -115,7 +115,6 @@
         let aiSpeaking = false;
         let callActive = false;
         let audio = null;
-        let vibrateTimeout = null;
 
         document.getElementById('callButton').addEventListener('click', function() {
             const callButton = document.getElementById('callButton');
@@ -126,7 +125,6 @@
                 callButton.textContent = "End Call";
                 callActive = true;
                 aiSpeaking = true;
-                //document.getElementById('response').innerText = "Call started. AI is speaking now.";
                 startAiSpeaking();
             } else {
                 // End the call
@@ -140,10 +138,6 @@
                 }
                 orb.classList.remove('floating', 'vibrating');
                 document.getElementById('response').innerText = "Call ended.";
-                if (vibrateTimeout) {
-                    clearTimeout(vibrateTimeout);
-                    vibrateTimeout = null;
-                }
             }
         });
 
@@ -153,33 +147,15 @@
                 .then(data => {
                     audio = new Audio(data.response);
                     audio.play();
-                    document.getElementById('orb').classList.add('floating');
+                    const orb = document.getElementById('orb');
+                    orb.classList.add('floating');
+                    orb.classList.add('vibrating');
                     audio.onended = function() {
                         aiSpeaking = false;
-                        document.getElementById('orb').classList.remove('floating', 'vibrating');
-                        if (vibrateTimeout) {
-                            clearTimeout(vibrateTimeout);
-                            vibrateTimeout = null;
-                        }
+                        orb.classList.remove('floating', 'vibrating');
                     };
                     aiSpeaking = true;
-                    vibrateOrbRandomly();
                 });
-        }
-
-        function vibrateOrbRandomly() {
-            const orb = document.getElementById('orb');
-            if (aiSpeaking) {
-                vibrateTimeout = setTimeout(() => {
-                    orb.classList.add('vibrating');
-                    setTimeout(() => {
-                        orb.classList.remove('vibrating');
-                        if (aiSpeaking) {
-                            vibrateOrbRandomly(); // Schedule the next random vibration
-                        }
-                    }, 100); // Vibration duration
-                }, Math.random() * 3000 + 2000); // Random interval between vibrations
-            }
         }
 
         document.getElementById('muteButton').addEventListener('click', function() {
@@ -200,7 +176,6 @@
 
         document.addEventListener('keydown', function(event) {
             if (event.key === 'p' && callActive && !aiSpeaking) {
-                //console.log("AI is speaking now");
                 startAiSpeaking();
             }
         });

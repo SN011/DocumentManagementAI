@@ -82,6 +82,7 @@
         document.getElementById('talkButton').addEventListener('click', function() {
             const orb = document.querySelector('.orb');
             orb.classList.add('floating');
+            
             fetch('/talk', { method: 'POST' })
                 .then(response => response.json())
                 .then(data => {

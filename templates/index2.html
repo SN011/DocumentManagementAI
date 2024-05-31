@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marvin the Orb</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #000000;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .container {
+            position: relative;
+            text-align: center;
+        }
+
+        .orb {
+            width: 200px;
+            height: 200px;
+            background: linear-gradient(45deg, #8A2BE2, #00FFFF);
+            border-radius: 50%;
+            box-shadow: 0 0 30px rgba(138, 43, 226, 0.9), 0 0 60px rgba(0, 255, 255, 0.9);
+        }
+
+        .name-tag {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #00FFFF;
+            font-size: 28px;
+            text-shadow: 0 0 10px #00FFFF, 0 0 20px #00FFFF;
+        }
+
+        .floating {
+            animation: float 3s ease-in-out infinite, glow 1.5s ease-in-out infinite alternate;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #00FFFF;
+            background-color: #000000;
+            border: 1px solid #00FFFF;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        button:hover {
+            background-color: #00FFFF;
+            color: #000000;
+        }
+
+        #response {
+            margin-top: 20px;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <div class="orb"></div>
+        <div class="name-tag">Marvin</div>
+    </div>
+    <button id="talkButton">Talk to Marvin</button>
+    <div id="response"></div>
+    <audio id="audio" style="display:none;"></audio>
+
+    <script>
+        document.getElementById('talkButton').addEventListener('click', function() {
+            const orb = document.querySelector('.orb');
+            orb.classList.add('floating');
+            fetch('/talk', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('response').innerText = data.response;
+                    orb.classList.remove('floating');
+                    
+                    // Fetch and play the audio
+                    const audio = document.getElementById('audio');
+                    audio.src = '/get_audio?' + new Date().getTime(); // Add timestamp to avoid caching
+                    audio.style.display = 'none'; // Ensure it is not visible
+                    audio.play();
+                });
+        });
+    </script>
+</body>
+
+</html>

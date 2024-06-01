@@ -1,6 +1,7 @@
 document.getElementById('setCredentialsButton').addEventListener('click', function() {
     const name = document.getElementById('name').value;
     const email = document.getElementById('email').value;
+    const recemail = document.getElementById('recemail').value;
     const phone = document.getElementById('phone').value;
 
     fetch('http://localhost:5000/set_credentials', {
@@ -8,7 +9,7 @@ document.getElementById('setCredentialsButton').addEventListener('click', functi
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, email, phone }),
+        body: JSON.stringify({ name, email, recemail, phone }),
     })
     .then(response => response.json())
     .then(data => {

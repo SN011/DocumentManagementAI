@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Google Sign-In Extension</title>
+  <style>
+    body {
+      width: 300px;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    #userInfo {
+      display: none;
+      margin-top: 20px;
+    }
+    .info-label {
+      font-weight: bold;
+    }
+    #phoneNumberInput {
+      margin-top: 10px;
+    }
+    #phoneNumberDisplay {
+      display: none;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Welcome!</h1>
+  <p>Click the button below to sign in with Google and retrieve your account details.</p>
+  <button id="signInButton">Sign In with Google</button>
+  
+  <div id="userInfo">
+    <h2>User Information</h2>
+    <p><span class="info-label">Name:</span> <span id="userName"></span></p>
+    <p><span class="info-label">Email:</span> <span id="userEmail"></span></p>
+    <p><span class="info-label">Profile Picture:</span></p>
+    <img id="userPicture" src="" alt="Profile Picture" width="100">
+    <div id="phoneNumberInput">
+      <p><span class="info-label">Phone Number:</span></p>
+      <input type="text" id="phoneNumber" placeholder="Enter your phone number">
+      <button id="savePhoneNumberButton">Save Phone Number</button>
+    </div>
+    <div id="phoneNumberDisplay">
+      <p><span class="info-label">Phone Number:</span> <span id="displayPhoneNumber"></span></p>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

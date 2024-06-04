@@ -1,50 +1,149 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <title>Google Sign-In Extension</title>
-  <style>
-    body {
-      width: 300px;
-      font-family: Arial, sans-serif;
-      text-align: center;
-    }
-    #userInfo {
-      display: none;
-      margin-top: 20px;
-    }
-    .info-label {
-      font-weight: bold;
-    }
-    #phoneNumberInput {
-      margin-top: 10px;
-    }
-    #phoneNumberDisplay {
-      display: none;
-      margin-top: 10px;
-    }
-  </style>
-</head>
-<body>
-  <h1>Welcome!</h1>
-  <p>Click the button below to sign in with Google and retrieve your account details.</p>
-  <button id="signInButton">Sign In with Google</button>
-  
-  <div id="userInfo">
-    <h2>User Information</h2>
-    <p><span class="info-label">Name:</span> <span id="userName"></span></p>
-    <p><span class="info-label">Email:</span> <span id="userEmail"></span></p>
-    <p><span class="info-label">Profile Picture:</span></p>
-    <img id="userPicture" src="" alt="Profile Picture" width="100">
-    <div id="phoneNumberInput">
-      <p><span class="info-label">Phone Number:</span></p>
-      <input type="text" id="phoneNumber" placeholder="Enter your phone number">
-      <button id="savePhoneNumberButton">Save Phone Number</button>
-    </div>
-    <div id="phoneNumberDisplay">
-      <p><span class="info-label">Phone Number:</span> <span id="displayPhoneNumber"></span></p>
-    </div>
-  </div>
+<html lang="en">
 
-  <script src="popup.js"></script>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marvin the Orb</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <style>
+        body {
+            margin: 0;
+            width: 800px; /* Set fixed width */
+            height: 800px; /* Set fixed height */
+            overflow: hidden; /* Hide overflow to remove scrollbar */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #000000;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative; /* Ensure absolute children are positioned relative to this container */
+        }
+
+        .orb {
+            width: 100px; /* Adjust width */
+            height: 100px; /* Adjust height */
+            background: linear-gradient(45deg, #8A2BE2, #00FFFF);
+            border-radius: 50%;
+            box-shadow: 0 0 30px rgba(138, 43, 226, 0.9), 0 0 60px rgba(0, 255, 255, 0.9);
+            margin-bottom: 20px;
+            display: none; /* Initially hidden */
+        }
+
+        .name-tag {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #00FFFF;
+            font-size: 28px;
+            text-shadow: 0 0 10px #00FFFF, 0 0 20px #00FFFF;
+        }
+
+        .floating {
+            animation: float 3s ease-in-out infinite, glow 1.5s ease-in-out infinite alternate;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #00FFFF;
+            background-color: #000000;
+            border: 1px solid #00FFFF;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        button:hover {
+            background-color: #00FFFF;
+            color: #000000;
+        }
+
+        #response {
+            margin-top: 20px;
+        }
+
+        #googleSignIn, #voiceAssistant {
+            width: 100%; /* Ensure it takes full width of the popup */
+            height: 100%; /* Ensure it takes full height of the popup */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #voiceAssistant {
+            display: none;
+        }
+
+        .info-label {
+            font-weight: bold;
+        }
+
+        #phoneNumberInput, #recEmailInput {
+            margin-top: 10px;
+        }
+
+        #phoneNumberDisplay, #recEmailDisplay {
+            display: none;
+            margin-top: 10px;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div id="googleSignIn" class="container">
+        <h1>Welcome!</h1>
+        <p id="loginPrompt">Click the button below to sign in with Google and retrieve your account details.</p>
+        <button id="signInButton">Sign In with Google</button>
+
+        <div id="userInfo">
+            <h2>User Information</h2>
+            <p><span class="info-label">Name:</span> <span id="userName"></span></p>
+            <p><span class="info-label">Email:</span> <span id="userEmail"></span></p>
+            <p><span class="info-label">Profile Picture:</span></p>
+            <img id="userPicture" src="" alt="Profile Picture" width="100">
+            <div id="phoneNumberInput">
+                <p><span class="info-label">Phone Number:</span></p>
+                <input type="text" id="phoneNumber" placeholder="Enter your phone number">
+            </div>
+            <div id="recEmailInput">
+                <p><span class="info-label">Recipient Email (recemail):</span></p>
+                <input type="text" id="recEmail" placeholder="Enter recipient email">
+            </div>
+            <button id="saveCredentialsButton">Save Credentials</button>
+            <button id="logoutButton">Log Out</button>
+            <button id="nextButton" style="display: none;">Next</button>
+            <div id="phoneNumberDisplay"></div>
+            <div id="recEmailDisplay"></div>
+        </div>
+    </div>
+
+    <div id="voiceAssistant" class="container">
+        <div class="orb"></div>
+        <div class="name-tag">Marvin</div>
+        <button id="talkButton">Talk to Marvin</button>
+        <div id="response"></div>
+        <audio id="audio" style="display:none;"></audio>
+        <button id="backButton">Back</button>
+    </div>
+
+    <script src="popup.js"></script>
 </body>
+
 </html>

@@ -223,44 +223,64 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.key === 'p' || event.key === 'P') {
             if (!isRecording) {
                 startRecording();
-            } else {
+            }
+            else {
                 stopRecording();
             }
         }
     });
-
+    
+    // document.addEventListener('keyup', function(event) {
+    //     if (event.key === 'p' || event.key === 'P') {
+    //         if (isRecording) {
+    //             stopRecording();
+    //         }
+    //     }
+    // });
+    
     function startRecording() {
         console.log('Start recording');
         isRecording = true;
-
+    
         const orb = document.querySelector('.orb');
         orb.classList.add('floating');
-
-        fetch('/start_recording', { method: 'POST' })
+    
+        fetch('http://localhost:5000/start_recording', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.status);
+            });
+    }
+    
+    function stopRecording() {
+        console.log('Stop recording');
+        isRecording = false;
+    
+        const orb = document.querySelector('.orb');
+        orb.classList.remove('floating');
+    
+        fetch('http://localhost:5000/stop_recording', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.status);
+                // Fetch the audio response after stopping the recording
+                fetchAudioResponse();
+            });
+    }
+    
+    function fetchAudioResponse() {
+        fetch('http://localhost:5000/talk', { method: 'POST' })
             .then(response => response.json())
             .then(data => {
                 document.getElementById('response').innerText = data.response;
                 
                 const audio = document.getElementById('audio');
-                audio.src = '/get_audio?' + new Date().getTime();
-                audio.style.display = 'none';
+                audio.src = 'http://localhost:5000/get_audio?' + new Date().getTime();
+                audio.style.display = 'block';
                 audio.play();
             });
     }
-
-    function stopRecording() {
-        console.log('Stop recording');
-        isRecording = false;
-
-        const orb = document.querySelector('.orb');
-        orb.classList.remove('floating');
-
-        fetch('/stop_recording', { method: 'POST' })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('response').innerText = data.response;
-            });
-    }
+    
 
     function checkLoginStatus() {
         console.log('Checking login status');

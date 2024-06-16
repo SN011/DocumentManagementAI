@@ -1,13 +1,4 @@
-from langchain.tools import BaseTool
-import os
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
-import googleapiclient
-import google.auth.exceptions
+from tools.imports import *
 
 class GoogleDriveUploadTool(BaseTool):
     name = "GoogleDriveUploadTool"
@@ -90,12 +81,7 @@ class GoogleDriveUploadTool(BaseTool):
 # response = tool._run(file_path='./documents/The Great Renovation.pdf', user_email='specific-user@example.com', rename=None)
 # print(response)
 
-import os
-import google.auth
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
-from googleapiclient.discovery import build
+
 
 
 class GoogleSheetsUpdateTool(BaseTool):
@@ -158,19 +144,7 @@ class GoogleSheetsUpdateTool(BaseTool):
     def _arun(self, name: str, phone_number: str):
         raise NotImplementedError("This tool does not support asynchronous operation yet.")
     
-import os
-import base64
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email.mime.text import MIMEText
-from email import encoders
-from langchain.tools import BaseTool
-from pydantic import BaseModel, Field, Extra
+
 
 # If modifying these SCOPES, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']

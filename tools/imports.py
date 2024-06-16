@@ -21,6 +21,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 import googleapiclient.errors
 import google.auth.exceptions
+from googleapiclient.http import MediaFileUpload
 
 #Langchain Imports
 from langchain.tools import BaseTool
@@ -28,8 +29,9 @@ from langchain_community.document_loaders import PyPDFDirectoryLoader, PyPDFLoad
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter, TextSplitter
 from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langchain.chains import create_retrieval_chain
+from langchain.chains.llm import LLMChain
 from langchain_community.vectorstores import FAISS
 from langchain.agents.agent_toolkits import ZapierToolkit
 from langchain.agents import initialize_agent, create_structured_chat_agent, AgentType

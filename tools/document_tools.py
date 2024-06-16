@@ -268,12 +268,12 @@ def search_document_by_name(name):
 
 class GoogleDocWriteTool(BaseTool):
     def __init__(self):
-        super().__init__(name="GoogleDocWriteTool", description="Writes any amount of content to a Google Doc with professional formatting")
+        super().__init__(name="GoogleDocWriteTool", description="Writes any amount of content to a Google Doc with professional formatting. Inputs are the text to write, and whether to append or not, as well as document name")
 
-    def _run(self, input_text, user_email, append=False, document_name=None):
+    def _run(self, input_text, append=False, document_name=None):
         try:
             # Parse the input text
-            processed_input = make_docmgr_write_to_file(input_text)
+            processed_input = make_docmgr_write_to_file(str(input_text))
             title, sections, append_response = parse_formatted_response(processed_input)
             append = append or append_response
 
@@ -290,10 +290,10 @@ class GoogleDocWriteTool(BaseTool):
                 document_id = create_google_doc(title)
                 print(f'Document created with ID: {document_id}')
 
-            # Share the document with the user's email
-            print(f'Sharing document with ID: {document_id} with {user_email}')  # Debug print
-            share_document_with_user(document_id, user_email)
-            print(f'Document shared with {user_email}')  # Debug print
+            # # Share the document with the user's email
+            # print(f'Sharing document with ID: {document_id} with {user_email}')  # Debug print
+            # share_document_with_user(document_id, user_email)
+            # print(f'Document shared with {user_email}')  # Debug print
 
             # Write the content to the Google Doc
             print(f'Writing content to document ID: {document_id}')  # Debug print
@@ -303,7 +303,7 @@ class GoogleDocWriteTool(BaseTool):
             # Return the URL to access the document
             document_url = f'https://docs.google.com/document/d/{document_id}/edit'
             print(f'Access the document at: {document_url}')
-            return "THE CONTENT HAS BEEN WRITTEN!!!!!!!! PLEASE STOP!!!!!!!! YOURE DONE!!!!!!!!! NO MORE!!!!"
+            return f"THE CONTENT HAS BEEN WRITTEN to the document called {document_name} with id = {document_id}. PLEASE STOP!!!!!!!! YOURE DONE!!!!!!!!! NO MORE!!!!"
         except HttpError as error:
             print(f'An error occurred: {error}')
             return f"An error occurred: {error}"

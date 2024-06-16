@@ -367,16 +367,19 @@ class FileOrganizerTool(BaseTool):
             query = "mimeType != 'application/vnd.google-apps.folder' and trashed = false"
             if parent_folder_id:
                 query += f" and '{parent_folder_id}' in parents"
+            else:
+                query += " and 'root' in parents"
             results = self.service.files().list(q=query, fields="files(id, name, mimeType, parents)").execute()
             items = results.get('files', [])
             return items
         except HttpError as error:
-            print(f'An error occurred during file listing: {error}')
+            print(f'An error occurred during file listing: {error}. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!')
             return []
 
     def create_folder_if_not_exists(self, folder_name: str, parent_folder_id=None):
         """Create a folder in Google Drive if it doesn't already exist."""
         try:
+            # Adjust folder name with parent folder context for uniqueness
             query = f"name contains '{folder_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
             if parent_folder_id:
                 query += f" and '{parent_folder_id}' in parents"
@@ -397,7 +400,7 @@ class FileOrganizerTool(BaseTool):
                 file = self.service.files().create(body=file_metadata, fields='id').execute()
                 return file.get('id')
         except HttpError as error:
-            print(f'An error occurred while creating folder: {error}')
+            print(f'An error occurred while creating folder: {error}. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!')
             return None
 
     def move_file_to_folder(self, file_id, folder_id):
@@ -414,9 +417,9 @@ class FileOrganizerTool(BaseTool):
                 removeParents=previous_parents,
                 fields='id, parents'
             ).execute()
-            print(f'Moved file {file_id} to folder {folder_id}')
+            print(f'Moved file {file_id} to folder {folder_id}.')
         except HttpError as error:
-            print(f'An error occurred during file move: {error}')
+            print(f'An error occurred during file move: {error}. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!')
 
     def organize_files(self, parent_folder_id=None):
         """Organize files by type and move them to respective folders."""
@@ -437,19 +440,29 @@ class FileOrganizerTool(BaseTool):
 
         for file in files:
             folder_name = folder_mapping.get(file['mimeType'], 'Others')
+            # Append parent folder name to ensure unique folder names
+            if parent_folder_id:
+                parent_folder_metadata = self.service.files().get(fileId=parent_folder_id, fields='name').execute()
+                parent_folder_name = parent_folder_metadata['name']
+                folder_name = f"{folder_name}_{parent_folder_name}"
             folder_id = self.create_folder_if_not_exists(folder_name, parent_folder_id)
             if folder_id:
                 self.move_file_to_folder(file['id'], folder_id)
 
-        return "Files organized successfully."
+        return "Files organized successfully. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
 
     def _run(self, parent_folder_name: str = None):
         """Run the tool to organize files in Google Drive."""
+        
         parent_folder_id = None
+
         if parent_folder_name:
             parent_folder_id = self.create_folder_if_not_exists(parent_folder_name)
             if parent_folder_id is None:
-                return "Parent folder not found."
+                return "Parent folder not found.PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
+        else:
+            parent_folder_id = None  # Ensure parent_folder_id is None for root directory
+            
         result = self.organize_files(parent_folder_id)
         return result
 

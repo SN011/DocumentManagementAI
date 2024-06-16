@@ -1,6 +1,6 @@
 from tools.imports import *
-
-client,llm = init_groq()
+import tools.initialize_groq
+client,_ = tools.initialize_groq.init_groq()
 
 DOCUMENT_IDS_FILE = "document_ids.txt"
 SCOPES = ['https://www.googleapis.com/auth/documents', 'https://www.googleapis.com/auth/drive']

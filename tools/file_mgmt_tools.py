@@ -74,6 +74,17 @@ class CreateFolderTool(BaseTool):
         raise NotImplementedError("This tool does not support asynchronous operation yet.")
 
 
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from langchain.tools import BaseTool
+from pydantic import Field, Extra
+import os
+
+SCOPES = ['https://www.googleapis.com/auth/drive']
+
 class MoveFileTool(BaseTool):
     name = "MoveFileTool"
     description = "Moves a file within Google Drive using OAuth 2.0 for secure user authentication. It searches for a file by name and moves it to the specified folder."
@@ -86,9 +97,7 @@ class MoveFileTool(BaseTool):
         super().__init__()
         self.credentials_path = credentials_path
         self.creds = None
-        self.tmp_folder_id = None
         self.authenticate()
-        #self.ensure_tmp_folder()
 
     def authenticate(self):
         """Authenticate the user with Google Drive API."""
@@ -105,29 +114,6 @@ class MoveFileTool(BaseTool):
         self.service = build('drive', 'v3', credentials=self.creds)
         print("Authentication successful.")
 
-    def ensure_tmp_folder(self):
-        """Ensure the temporary folder exists."""
-        create_folder_tool = CreateFolderTool(credentials_path=self.credentials_path)
-        self.tmp_folder_id = create_folder_tool.create_folder('tmp')
-
-    def search_file(self, file_name: str):
-        """Search for a file by name in Google Drive."""
-        print(f"Searching for file: {file_name}")
-        try:
-            query = f"name contains '{file_name}' and trashed=false"
-            print(f"Query: {query}")
-            results = self.service.files().list(q=query, fields="files(id, name)").execute()
-            items = results.get('files', [])
-            if not items:
-                print(f'No files found with the name: {file_name}')
-                return None
-            for item in items:
-                print(f'Found file: {item["name"]} (ID: {item["id"]})')
-            return items[0]['id']  # Return the first matching file ID
-        except HttpError as error:
-            print(f'An error occurred during file search: {error}')
-            return None
-  
     def move_file(self, file_id: str, folder_id: str):
         """Move the file to the new folder."""
         print(f"Moving file ID: {file_id} to folder ID: {folder_id}")
@@ -141,16 +127,6 @@ class MoveFileTool(BaseTool):
                 previous_parents = []
             previous_parents_str = ",".join(previous_parents)
             print(f"Previous parents: {previous_parents_str}")
-
-            # if not previous_parents_str:
-            #     # Add the file to a temporary parent folder first
-            #     print(f"No previous parents. Adding file to temporary folder first...")
-            #     self.service.files().update(
-            #         fileId=file_id,
-            #         addParents=self.tmp_folder_id,
-            #         fields='id, parents'
-            #     ).execute()
-            #     previous_parents_str = self.tmp_folder_id
 
             # Move the file to the new folder
             print("Updating file to new folder...")
@@ -169,32 +145,17 @@ class MoveFileTool(BaseTool):
             print(f'An unexpected error occurred: {e}')
             return None
 
-    def search_folder(self, folder_name: str):
-        """Search for a folder by name in Google Drive using a contains query."""
-        try:
-            query = f"name contains '{folder_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
-            results = self.service.files().list(q=query, fields="files(id, name)").execute()
-            items = results.get('files', [])
-            if items:
-                for item in items:
-                    print(f'Found folder: {item["name"]} (ID: {item["id"]})')
-                return items[0]['id']
-            return None
-        except HttpError as error:
-            print(f'An error occurred during folder search: {error}')
-            return None
-
     def _run(self, file_name: str, folder_name: str):
         """Run the tool to search for the file and move it to the specified folder."""
-        folder_id = "root" if folder_name.lower() in ["root", "general google drive"] else self.search_folder(folder_name)
-        if folder_id is None:
-            return "Folder not found."
-        
-        print(f"Running MoveFileTool with file_name: {file_name} and folder_id: {folder_id}")
-        file_id = self.search_file(file_name)
-        if file_id is None:
-            return "File not found."
-        
+        if folder_name.lower() in ["root", "general google drive"]:
+            folder_id = "root"
+        else:
+            return f"Use the ImprovedSearchTool to find the folder ID for '{folder_name}' and pass it as an argument to this tool."
+
+        return f"Use the ImprovedSearchTool to find the file ID for '{file_name}' and pass it as an argument to this tool. Once you have both IDs, call this tool again with the IDs to move the file."
+
+    def _run_with_ids(self, file_id: str, folder_id: str):
+        """Run the tool to move the file with the provided file ID to the specified folder ID."""
         result = self.move_file(file_id, folder_id)
         return result if result else "Failed to move file."
 
@@ -329,6 +290,7 @@ class FolderMovementTool(BaseTool):
 
     def _arun(self):
         raise NotImplementedError("This tool does not support asynchronous operation yet.")
+    
 
 
 SCOPES = ['https://www.googleapis.com/auth/drive']
@@ -379,20 +341,22 @@ class FileOrganizerTool(BaseTool):
     def create_folder_if_not_exists(self, folder_name: str, parent_folder_id=None):
         """Create a folder in Google Drive if it doesn't already exist."""
         try:
-            # Adjust folder name with parent folder context for uniqueness
-            query = f"name contains '{folder_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
+            unique_folder_name = folder_name
+            if parent_folder_id:
+                parent_folder = self.service.files().get(fileId=parent_folder_id, fields="name").execute()
+                unique_folder_name += f"_{parent_folder['name']}"
+
+            query = f"name = '{unique_folder_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
             if parent_folder_id:
                 query += f" and '{parent_folder_id}' in parents"
             results = self.service.files().list(q=query, fields="files(id, name)").execute()
             items = results.get('files', [])
+            print([str(item)+"\n" for item in items])
             if items:
-                for item in items:
-                    if item['name'].lower() == folder_name.lower():
-                        return item['id']
                 return items[0]['id']
             else:
                 file_metadata = {
-                    'name': folder_name,
+                    'name': unique_folder_name,
                     'mimeType': 'application/vnd.google-apps.folder'
                 }
                 if parent_folder_id:
@@ -403,12 +367,25 @@ class FileOrganizerTool(BaseTool):
             print(f'An error occurred while creating folder: {error}. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!')
             return None
 
+    def get_file_permissions(self, file_id):
+        """Get the permissions of a file."""
+        try:
+            permissions = self.service.permissions().list(fileId=file_id).execute()
+            return permissions.get('permissions', [])
+        except HttpError as error:
+            print(f'An error occurred while getting file permissions: {error}')
+            return []
+
     def move_file_to_folder(self, file_id, folder_id):
         """Move a file to the specified folder."""
         try:
             # Retrieve the existing parents to remove
             file = self.service.files().get(fileId=file_id, fields='parents').execute()
             previous_parents = ",".join(file.get('parents'))
+
+            # Print permissions for debugging
+            permissions = self.get_file_permissions(file_id)
+            print(f"Permissions for file {file_id}: {permissions}")
 
             # Move the file to the new folder
             self.service.files().update(
@@ -417,7 +394,7 @@ class FileOrganizerTool(BaseTool):
                 removeParents=previous_parents,
                 fields='id, parents'
             ).execute()
-            print(f'Moved file {file_id} to folder {folder_id}.')
+            print(f'Moved file {file_id} to folder {folder_id}')
         except HttpError as error:
             print(f'An error occurred during file move: {error}. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!')
 
@@ -425,7 +402,7 @@ class FileOrganizerTool(BaseTool):
         """Organize files by type and move them to respective folders."""
         files = self.list_unorganized_files(parent_folder_id)
         if not files:
-            return "No unorganized files found."
+            return "No unorganized files found.PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
 
         folder_mapping = {
             'application/vnd.google-apps.document': 'Documents',
@@ -440,11 +417,6 @@ class FileOrganizerTool(BaseTool):
 
         for file in files:
             folder_name = folder_mapping.get(file['mimeType'], 'Others')
-            # Append parent folder name to ensure unique folder names
-            if parent_folder_id:
-                parent_folder_metadata = self.service.files().get(fileId=parent_folder_id, fields='name').execute()
-                parent_folder_name = parent_folder_metadata['name']
-                folder_name = f"{folder_name}_{parent_folder_name}"
             folder_id = self.create_folder_if_not_exists(folder_name, parent_folder_id)
             if folder_id:
                 self.move_file_to_folder(file['id'], folder_id)
@@ -456,15 +428,114 @@ class FileOrganizerTool(BaseTool):
         
         parent_folder_id = None
 
-        if parent_folder_name:
+        if parent_folder_name and parent_folder_name.lower() != 'root':
             parent_folder_id = self.create_folder_if_not_exists(parent_folder_name)
             if parent_folder_id is None:
-                return "Parent folder not found.PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
-        else:
-            parent_folder_id = None  # Ensure parent_folder_id is None for root directory
+                return "Parent folder not found. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
             
         result = self.organize_files(parent_folder_id)
         return result
+
+    def _arun(self):
+        raise NotImplementedError("This tool does not support asynchronous operation yet.")
+
+SCOPES = ['https://www.googleapis.com/auth/drive']
+
+class ImprovedSearchTool(BaseTool):
+    name = "ImprovedSearchTool"
+    description = "Searches for files and folders in Google Drive using OAuth 2.0 for secure user authentication. If multiple matches are found, it lists them and asks the user to select the correct one."
+    credentials_path: str = Field(..., description="Path to the credentials JSON file")
+
+    class Config:
+        extra = Extra.allow
+
+    def __init__(self, credentials_path: str):
+        super().__init__()
+        self.credentials_path = credentials_path
+        self.creds = None
+        self.authenticate()
+
+    def authenticate(self):
+        """Authenticate the user with Google Drive API using OAuth 2.0."""
+        if os.path.exists('token.json'):
+            self.creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+        if not self.creds or not self.creds.valid:
+            if self.creds and self.creds.expired and self.creds.refresh_token:
+                self.creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
+                self.creds = flow.run_local_server(port=0)
+            with open('token.json', 'w') as token:
+                token.write(self.creds.to_json())
+        self.service = build('drive', 'v3', credentials=self.creds)
+
+    def get_file_or_folder_by_id(self, id: str):
+        """Retrieve a file or folder by its ID."""
+        try:
+            item = self.service.files().get(fileId=id, fields='id, name, mimeType').execute()
+            return item
+        except HttpError as error:
+            print(f'An error occurred while retrieving the item: {error}')
+            return None
+        
+    def search_files_and_folders(self, name: str):
+        """Search for files and folders by name in Google Drive with pagination."""
+        items = []
+        page_token = None
+
+        while True:
+            try:
+                query = f"name contains '{name}' and trashed = false"
+                results = self.service.files().list(
+                    q=query,
+                    fields="nextPageToken, files(id, name, mimeType)",
+                    pageToken=page_token
+                ).execute()
+                items.extend(results.get('files', []))
+                page_token = results.get('nextPageToken')
+                if not page_token:
+                    break
+            except HttpError as error:
+                print(f'An error occurred during search: {error}. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!')
+                break
+
+        return items
+
+    def list_matches_and_ask_user(self, items):
+        """List all matches and ask the user to select the correct one."""
+        if not items:
+            return None
+
+        if len(items) == 1:
+            return items[0]['id']
+
+        # Multiple matches found
+        enumerated_items = [
+            f"{index + 1}: {item['name']} (ID: {item['id']}, Type: {item['mimeType']})"
+            for index, item in enumerate(items)
+        ]
+        return enumerated_items
+
+    def _run(self, name: str = None, id: str = None):
+        """Run the tool to search for files and folders by name and ask the user to select the correct one if multiple matches are found."""
+        if id:
+            item = self.get_file_or_folder_by_id(id)
+            if item:
+                return f"Retrieved item: {item['name']} (ID: {item['id']}, Type: {item['mimeType']}). PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
+            else:
+                return "Item not found or insufficient permissions. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
+
+        if name:
+            items = self.search_files_and_folders(name)
+            enumerated_items = self.list_matches_and_ask_user(items)
+
+            if enumerated_items:
+                return "Multiple matches found:\n" + "\n".join(enumerated_items) + "\nPlease specify the number of the correct item."
+            else:
+                return "No matches found. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
+        
+        return "Please provide either a name or an ID. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
+
 
     def _arun(self):
         raise NotImplementedError("This tool does not support asynchronous operation yet.")

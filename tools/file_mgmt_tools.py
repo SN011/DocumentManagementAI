@@ -27,27 +27,28 @@ class CreateFolderTool(BaseTool):
         
         self.service = build('drive', 'v3', credentials=self.creds)
 
-    def search_folder(self, folder_name: str):
+    def search_folder(self, folder_name: str, parent_folder_id: str = None):
         """Search for a folder by name in Google Drive."""
         try:
             query = f"name = '{folder_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
+            if parent_folder_id:
+                query += f" and '{parent_folder_id}' in parents"
             results = self.service.files().list(q=query, fields="files(id, name)").execute()
             items = results.get('files', [])
             if items:
                 print(f'Found folder: {items[0]["name"]} (ID: {items[0]["id"]})')
-                
                 return items[0]['id']
             return None
         except HttpError as error:
             print(f'An error occurred during folder search: {error}')
             return None
 
-    def create_folder(self, folder_name: str):
+    def create_folder(self, folder_name: str, parent_folder_id: str = None):
         """Create a folder in Google Drive."""
-        folder_id = self.search_folder(folder_name)
+        folder_id = self.search_folder(folder_name, parent_folder_id)
         if folder_id:
             print(f'Folder "{folder_name}" already exists with ID: {folder_id}')
-            with open('folder_ids.txt','w') as f:
+            with open('folder_ids.txt', 'w') as f:
                 f.write(folder_id)
             return folder_id
         
@@ -55,33 +56,29 @@ class CreateFolderTool(BaseTool):
             'name': folder_name,
             'mimeType': 'application/vnd.google-apps.folder'
         }
+        if parent_folder_id:
+            file_metadata['parents'] = [parent_folder_id]
         try:
             file = self.service.files().create(body=file_metadata, fields='id').execute()
             print(f'Folder "{folder_name}" created with ID: {file.get("id")}')
-            with open('folder_ids.txt','w') as f:
+            with open('folder_ids.txt', 'w') as f:
                 f.write(file.get('id'))
             return file.get('id')
         except HttpError as error:
             print(f'An error occurred while creating folder: {error}')
             return None
 
-    def _run(self, folder_name: str):
+    def _run(self, folder_name: str, parent_folder_id: str = None):
         """Run the tool to create a folder in Google Drive."""
-        result = self.create_folder(folder_name)
+        if not parent_folder_id:
+            return f"Use the ImprovedSearchTool to find the parent folder ID for '{parent_folder_id}' and pass it as an argument to this tool."
+
+        result = self.create_folder(folder_name, parent_folder_id)
         return result if result else "Failed to create folder."
 
     def _arun(self):
         raise NotImplementedError("This tool does not support asynchronous operation yet.")
 
-
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from langchain.tools import BaseTool
-from pydantic import Field, Extra
-import os
 
 SCOPES = ['https://www.googleapis.com/auth/drive']
 
@@ -145,23 +142,24 @@ class MoveFileTool(BaseTool):
             print(f'An unexpected error occurred: {e}')
             return None
 
-    def _run(self, file_name: str, folder_name: str):
+    def _run(self, file_name: str = None, folder_id: str = None, file_id: str = None):
         """Run the tool to search for the file and move it to the specified folder."""
-        if folder_name.lower() in ["root", "general google drive"]:
+        if folder_id.lower() in ["root", "google drive", "my drive"]:
             folder_id = "root"
-        else:
-            return f"Use the ImprovedSearchTool to find the folder ID for '{folder_name}' and pass it as an argument to this tool."
+        elif not file_id and not folder_id:
+            return f"Use the ImprovedSearchTool to find the folder ID for '{folder_id}' and pass it as an argument to this tool."
+        
+        if file_name and folder_id:
+            return f"Use the ImprovedSearchTool to find the file ID for '{file_name}' and pass it as an argument to this tool. Once you have both IDs, call this tool again with the IDs to move the file."
 
-        return f"Use the ImprovedSearchTool to find the file ID for '{file_name}' and pass it as an argument to this tool. Once you have both IDs, call this tool again with the IDs to move the file."
+        if file_id and folder_id:
+            result = self.move_file(file_id, folder_id)
+            return result if result else "Failed to move file."
 
-    def _run_with_ids(self, file_id: str, folder_id: str):
-        """Run the tool to move the file with the provided file ID to the specified folder ID."""
-        result = self.move_file(file_id, folder_id)
-        return result if result else "Failed to move file."
+        return "Invalid input. Provide either file_name or file_id and folder_id."
 
     def _arun(self):
         raise NotImplementedError("This tool does not support asynchronous operation yet.")
-
 
 SCOPES = ['https://www.googleapis.com/auth/drive']
 
@@ -226,29 +224,6 @@ class FolderMovementTool(BaseTool):
             print(f'An error occurred: {error}')
 
     def move_folder_and_contents(self, folder_id, new_parent_folder_id):
-        service = build('drive', 'v3', credentials=self.creds)
-        try:
-            # Move the folder itself
-            self.move_file_to_folder(folder_id, new_parent_folder_id)
-
-            # List all files and subfolders in the folder
-            query = f"'{folder_id}' in parents"
-            results = service.files().list(q=query, fields="files(id, mimeType)").execute()
-            items = results.get('files', [])
-
-            for item in items:
-                if item['mimeType'] == 'application/vnd.google-apps.folder':
-                    # Recursively move subfolders
-                    self.move_folder_and_contents(item['id'], folder_id)
-                else:
-                    # Move files
-                    self.move_file_to_folder(item['id'], folder_id)
-
-            print(f'Moved folder {folder_id} and all its contents to {new_parent_folder_id}')
-        except HttpError as error:
-            print(f'An error occurred during file move: {error}')
-
-    def move_folder_and_contents(self, folder_id, new_parent_folder_id):
         try:
             # Move the folder itself
             self.move_file_to_folder(folder_id, new_parent_folder_id)
@@ -266,31 +241,51 @@ class FolderMovementTool(BaseTool):
                     # Move files
                     self.move_file_to_folder(item['id'], folder_id)
 
-            print(f'Moved folder {folder_id} and all its contents to {new_parent_folder_id}')
+            return (f'Moved folder {folder_id} and all its contents to {new_parent_folder_id}. PLEASE STOP ALL WORK!!!')
         except HttpError as error:
             print(f'An error occurred: {error}')
+            return None
 
-    def _run(self, folder_name: str, new_parent_folder_name: str):
+    # def _run(self, folder_name: str, new_parent_folder_name: str, folder_id:str = None, new_parent_folder_id:str = None):
+    #     """Run the tool to search for a folder by name and move its contents to a new parent folder."""
+
+    #     if new_parent_folder_name.lower() in ["root", "general google drive"]:
+    #         new_parent_folder_id = "root"
+    #     else:
+    #         new_parent_folder_id = self.search_folder(new_parent_folder_name)
+    #         if not new_parent_folder_id:
+    #             return f"New parent folder '{new_parent_folder_name}' not found."
+        
+    #     print(f"Running FolderMovementTool with folder_name: {folder_name} and new_parent_folder_id: {new_parent_folder_id}")
+    #     folder_id = self.search_folder(folder_name)
+    #     if folder_id is None:
+    #         return "Folder not found."
+        
+    #     self.move_folder_and_contents(folder_id, new_parent_folder_id)
+    #     return "Folder and contents moved successfully. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
+
+    # def _arun(self):
+    #     raise NotImplementedError("This tool does not support asynchronous operation yet.")
+    
+    def _run(self, folder_name: str, new_parent_folder_name: str, folder_id:str = None, new_parent_folder_id:str = None):
         """Run the tool to search for a folder by name and move its contents to a new parent folder."""
 
-        if new_parent_folder_name.lower() in ["root", "general google drive"]:
+        if new_parent_folder_name.lower() in ["root", "google drive", "my drive", "general google drive"]:
             new_parent_folder_id = "root"
-        else:
-            new_parent_folder_id = self.search_folder(new_parent_folder_name)
-            if not new_parent_folder_id:
-                return f"New parent folder '{new_parent_folder_name}' not found."
+        elif not folder_id and not new_parent_folder_id:
+            return f"Use the ImprovedSearchTool to find the PARENT FOLDER ID for '{new_parent_folder_name}' and pass it as an argument to this tool. Be sure to pass in the new_parent_folder_name as an argument too"
         
-        print(f"Running FolderManagementTool with folder_name: {folder_name} and new_parent_folder_id: {new_parent_folder_id}")
-        folder_id = self.search_folder(folder_name)
-        if folder_id is None:
-            return "Folder not found."
-        
-        self.move_folder_and_contents(folder_id, new_parent_folder_id)
-        return "Folder and contents moved successfully. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
+        if folder_name and not folder_id:
+            return f"Use the ImprovedSearchTool to find the folder ID for '{folder_name}' (which is the folder that's being moved) and pass it as an argument to this tool. Once you have both IDs, call this tool again with the IDs to move the folder. Be sure to also pass in folder_name and new_parent_folder_name PLEASE!"
 
+        if folder_id and new_parent_folder_id:
+            result = self.move_folder_and_contents(folder_id, new_parent_folder_id)
+            return result if result else "Failed to move folder. PLEASE STOP ALL WORK!!!!"
+
+        return "Invalid input. Provide either file_name or file_id and folder_id."
+    
     def _arun(self):
         raise NotImplementedError("This tool does not support asynchronous operation yet.")
-    
 
 
 SCOPES = ['https://www.googleapis.com/auth/drive']
@@ -345,7 +340,8 @@ class FileOrganizerTool(BaseTool):
             if parent_folder_id:
                 parent_folder = self.service.files().get(fileId=parent_folder_id, fields="name").execute()
                 unique_folder_name += f"_{parent_folder['name']}"
-
+            else:
+                unique_folder_name += f"_MyDrive"
             query = f"name = '{unique_folder_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
             if parent_folder_id:
                 query += f" and '{parent_folder_id}' in parents"
@@ -507,7 +503,7 @@ class ImprovedSearchTool(BaseTool):
             return None
 
         if len(items) == 1:
-            return items[0]['id']
+            return f"{1}: {items[0]['name']} (ID: {items[0]['id']}, Type: {items[0]['mimeType']})"
 
         # Multiple matches found
         enumerated_items = [
@@ -529,8 +525,10 @@ class ImprovedSearchTool(BaseTool):
             items = self.search_files_and_folders(name)
             enumerated_items = self.list_matches_and_ask_user(items)
 
-            if enumerated_items:
-                return "Multiple matches found:\n" + "\n".join(enumerated_items) + "\nPlease specify the number of the correct item."
+            if len(enumerated_items) > 1:
+                return "Multiple matches found:\n" + "\n".join(enumerated_items) + "\nPlease ASK THE HUMAN TO specify the number of the correct item."
+            elif len(enumerated_items) == 1:
+                return "SINGLE MATCH FOUND:\n" + "".join(enumerated_items) + "\nPlease CONFIRM WITH THE HUMAN TO specify the number of the correct item."
             else:
                 return "No matches found. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
         

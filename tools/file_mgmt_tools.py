@@ -50,7 +50,7 @@ class CreateFolderTool(BaseTool):
             print(f'Folder "{folder_name}" already exists with ID: {folder_id}')
             with open('folder_ids.txt', 'w') as f:
                 f.write(folder_id)
-            return folder_id
+            return (f'Folder "{folder_name}" already exists with ID: {folder_id}')
         
         file_metadata = {
             'name': folder_name,
@@ -71,7 +71,7 @@ class CreateFolderTool(BaseTool):
     def _run(self, folder_name: str, parent_folder_id: str = None, **kwargs):
         """Run the tool to create a folder in Google Drive."""
         if not parent_folder_id:
-            return f"Use the ImprovedSearchTool to find the parent folder ID for '{parent_folder_id}' and pass it as an argument to this tool."
+            return f"Use the ImprovedSearchTool to find the parent folder ID for '{folder_name}' and pass it as an argument to this tool."
 
         result = self.create_folder(folder_name, parent_folder_id)
         return result if result else "Failed to create folder."

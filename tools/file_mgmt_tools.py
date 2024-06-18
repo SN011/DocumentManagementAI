@@ -17,14 +17,18 @@ class CreateFolderTool(BaseTool):
         self.authenticate()
 
     def authenticate(self):
-        """Authenticate the user with Google Drive API."""
+        """Authenticate the user with Google Drive API using OAuth 2.0."""
+        if os.path.exists('token.json'):
+            self.creds = Credentials.from_authorized_user_file('token.json', SCOPES)
         if not self.creds or not self.creds.valid:
             if self.creds and self.creds.expired and self.creds.refresh_token:
                 self.creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
                 self.creds = flow.run_local_server(port=0)
-        
+            with open('token.json', 'w') as token:
+                token.write(self.creds.to_json())
+                
         self.service = build('drive', 'v3', credentials=self.creds)
 
     def search_folder(self, folder_name: str, parent_folder_id: str = None):
@@ -97,16 +101,17 @@ class MoveFileTool(BaseTool):
         self.authenticate()
 
     def authenticate(self):
-        """Authenticate the user with Google Drive API."""
-        print("Authenticating with Google Drive API...")
+        """Authenticate the user with Google Drive API using OAuth 2.0."""
+        if os.path.exists('token.json'):
+            self.creds = Credentials.from_authorized_user_file('token.json', SCOPES)
         if not self.creds or not self.creds.valid:
             if self.creds and self.creds.expired and self.creds.refresh_token:
-                print("Refreshing expired credentials...")
                 self.creds.refresh(Request())
             else:
-                print("Running local server for authentication...")
                 flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
                 self.creds = flow.run_local_server(port=0)
+            with open('token.json', 'w') as token:
+                token.write(self.creds.to_json())
         
         self.service = build('drive', 'v3', credentials=self.creds)
         print("Authentication successful.")
@@ -273,7 +278,7 @@ class FolderMovementTool(BaseTool):
         if new_parent_folder_name.lower() in ["root", "google drive", "my drive", "general google drive"]:
             new_parent_folder_id = "root"
         elif not folder_id and not new_parent_folder_id:
-            return f"Use the ImprovedSearchTool to find the PARENT FOLDER ID for '{new_parent_folder_name}' and pass it as an argument to this tool. Be sure to pass in the new_parent_folder_name as an argument too"
+            return f"Use the ImprovedSearchTool to find the NEW PARENT FOLDER ID for '{new_parent_folder_name}' and pass it as an argument to this tool. Be sure to pass in the new_parent_folder_name as an argument too"
         
         if folder_name and not folder_id:
             return f"Use the ImprovedSearchTool to find the folder ID for '{folder_name}' (which is the folder that's being moved) and pass it as an argument to this tool. Once you have both IDs, call this tool again with the IDs to move the folder. Be sure to also pass in folder_name and new_parent_folder_name PLEASE!"
@@ -292,7 +297,7 @@ SCOPES = ['https://www.googleapis.com/auth/drive']
 
 class FileOrganizerTool(BaseTool):
     name = "FileOrganizerTool"
-    description = "Organizes files in Google Drive by segregating them based on type and moving them to respective folders using OAuth 2.0 for secure user authentication."
+    description = "Organizes files in ANY SPECIFIED FOLDER by segregating them based on type and moving them to respective folders using OAuth 2.0 for secure user authentication. DOES NOT CREATE FOLDERS"
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
 
     class Config:
@@ -392,7 +397,7 @@ class FileOrganizerTool(BaseTool):
             ).execute()
             print(f'Moved file {file_id} to folder {folder_id}')
         except HttpError as error:
-            print(f'An error occurred during file move: {error}. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!')
+            return (f'An error occurred during file move: {error}. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!')
 
     def organize_files(self, parent_folder_id=None):
         """Organize files by type and move them to respective folders."""
@@ -419,18 +424,21 @@ class FileOrganizerTool(BaseTool):
 
         return "Files organized successfully. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
 
-    def _run(self, parent_folder_name: str = None, **kwargs):
+    def _run(self, parent_folder_name: str = None, parent_folder_id: str = None, **kwargs):
         """Run the tool to organize files in Google Drive."""
         
-        parent_folder_id = None
+        
 
-        if parent_folder_name and parent_folder_name.lower() != 'root':
-            parent_folder_id = self.create_folder_if_not_exists(parent_folder_name)
-            if parent_folder_id is None:
-                return "Parent folder not found. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
-            
-        result = self.organize_files(parent_folder_id)
-        return result
+        if parent_folder_name and parent_folder_name.lower() != 'root' and not parent_folder_id:
+            return f"Use the ImprovedSearchTool to find the PARENT FOLDER ID for '{parent_folder_name}' and pass it as an argument to this tool as 'parent_folder_id'. Be sure to pass in the parent_folder_name as an argument too."
+            # parent_folder_id = self.create_folder_if_not_exists(parent_folder_name)
+            # if parent_folder_id is None:
+            #     return "Parent folder not found. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
+        elif parent_folder_name.lower() == 'root':
+            parent_folder_id = None
+        elif parent_folder_id:
+            result = self.organize_files(parent_folder_id)
+            return result if result else "Operation failed. STOP ALL WORK!!!"
 
     def _arun(self):
         raise NotImplementedError("This tool does not support asynchronous operation yet.")

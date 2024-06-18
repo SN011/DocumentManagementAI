@@ -42,6 +42,7 @@ class GoogleDriveUploadTool(BaseTool):
             return f"File not found in the LOCAL SYSTEM: {file_path}"
         
         mime_type, _ = mimetypes.guess_type(file_path)
+        print('THE MIMETYPE MIGHT BE: ', mime_type)
         if mime_type is None:
             mime_type = 'application/octet-stream'  # Default MIME type if unknown
 

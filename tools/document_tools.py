@@ -22,20 +22,22 @@ class GoogleDocWriteTool(BaseTool):
         self.authenticate()
 
     def authenticate(self):
-        """Authenticate the user with Google Drive API."""
-        print("Authenticating with Google Drive API...")
+        """Authenticate the user with Google Drive API using OAuth 2.0."""
+        if os.path.exists('token.json'):
+            self.creds = Credentials.from_authorized_user_file('token.json', SCOPES)
         if not self.creds or not self.creds.valid:
             if self.creds and self.creds.expired and self.creds.refresh_token:
-                print("Refreshing expired credentials...")
                 self.creds.refresh(Request())
             else:
-                print("Running local server for authentication...")
                 flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
                 self.creds = flow.run_local_server(port=0)
-        self.self.docs_service = build('docs', 'v1', credentials=self.creds)
-        self.self.drive_service = build('drive', 'v3', credentials=self.creds)
+            with open('token.json', 'w') as token:
+                token.write(self.creds.to_json())
+        
+        self.docs_service = build('docs', 'v1', credentials=self.creds)
+        self.drive_service = build('drive', 'v3', credentials=self.creds)
     
-    def make_docmgr_write_to_file(cc_out):
+    def make_docmgr_write_to_file(self,cc_out):
         chat_completion = client.chat.completions.create(
             messages=[
                 {
@@ -233,7 +235,7 @@ class GoogleDocWriteTool(BaseTool):
         print(f'Finished writing to document ID: {document_id}')  # Debug print
 
 
-    def parse_formatted_response(response):
+    def parse_formatted_response(self,response):
         title_match = re.search(r'"title":\s*"([^"]+)"', response)
         title = title_match.group(1) if title_match else "Untitled Document"
         

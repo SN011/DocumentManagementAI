@@ -5,6 +5,7 @@ import json
 import base64
 import random
 import smtplib
+import mimetypes
 
 #Email Related Imports
 from email.mime.multipart import MIMEMultipart

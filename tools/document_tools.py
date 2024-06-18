@@ -270,7 +270,7 @@ class GoogleDocWriteTool(BaseTool):
     def __init__(self):
         super().__init__(name="GoogleDocWriteTool", description="Writes any amount of content to a Google Doc with professional formatting. Inputs are the text to write, and whether to append or not, as well as document name")
 
-    def _run(self, input_text, append=False, document_name=None):
+    def _run(self, input_text, append=False, document_name=None, **kwargs):
         try:
             # Parse the input text
             processed_input = make_docmgr_write_to_file(str(input_text))

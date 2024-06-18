@@ -63,12 +63,12 @@ class CreateFolderTool(BaseTool):
             print(f'Folder "{folder_name}" created with ID: {file.get("id")}')
             with open('folder_ids.txt', 'w') as f:
                 f.write(file.get('id'))
-            return file.get('id')
+            return f"HERE IS FOLDER'S ID {file.get('id')}"
         except HttpError as error:
             print(f'An error occurred while creating folder: {error}')
             return None
 
-    def _run(self, folder_name: str, parent_folder_id: str = None):
+    def _run(self, folder_name: str, parent_folder_id: str = None, **kwargs):
         """Run the tool to create a folder in Google Drive."""
         if not parent_folder_id:
             return f"Use the ImprovedSearchTool to find the parent folder ID for '{parent_folder_id}' and pass it as an argument to this tool."
@@ -137,24 +137,24 @@ class MoveFileTool(BaseTool):
             return f'Moved file {file_id} to folder {folder_id}. PLEEEASEEEE STOOOPPPPPP!!!!!! NO MORE!!!!!!! YOU ARE DONE!!!!'
         except HttpError as error:
             print(f'An error occurred during file move: {error}')
-            return None
+            return f'An error occurred during file move: {error}'
         except Exception as e:
             print(f'An unexpected error occurred: {e}')
-            return None
+            return f'An unexpected error occurred: {e}'
 
-    def _run(self, file_name: str = None, folder_id: str = None, file_id: str = None):
+    def _run(self, file_name: str = None, folder_name:str = None, folder_id: str = None, file_id: str = None, **kwargs):
         """Run the tool to search for the file and move it to the specified folder."""
-        if folder_id.lower() in ["root", "google drive", "my drive"]:
+        if folder_id and folder_id.lower() in ["root", "google drive", "my drive"]:
             folder_id = "root"
-        elif not file_id and not folder_id:
-            return f"Use the ImprovedSearchTool to find the folder ID for '{folder_id}' and pass it as an argument to this tool."
+        elif folder_name and not folder_id:
+            return f"Use the ImprovedSearchTool to find the folder ID for '{folder_name}' and pass it as an argument to this tool as parameter 'folder_id'. Be sure to pass in the folder_name as well"
         
-        if file_name and folder_id:
-            return f"Use the ImprovedSearchTool to find the file ID for '{file_name}' and pass it as an argument to this tool. Once you have both IDs, call this tool again with the IDs to move the file."
+        if file_name and folder_id and not file_id:
+            return f"Use the ImprovedSearchTool to find the file ID for '{file_name}' and pass it as an argument to this tool under 'file_id' parameter. Once you have both IDs, call this tool again with the IDs to move the file. Be sure to pass in ALL OF THE FOLLOWING: folder_name, file_name, file_id, folder_id."
 
         if file_id and folder_id:
             result = self.move_file(file_id, folder_id)
-            return result if result else "Failed to move file."
+            return result if result else "Failed to move file. Please stop all work!!!!!!!"
 
         return "Invalid input. Provide either file_name or file_id and folder_id."
 
@@ -267,7 +267,7 @@ class FolderMovementTool(BaseTool):
     # def _arun(self):
     #     raise NotImplementedError("This tool does not support asynchronous operation yet.")
     
-    def _run(self, folder_name: str, new_parent_folder_name: str, folder_id:str = None, new_parent_folder_id:str = None):
+    def _run(self, folder_name: str, new_parent_folder_name: str, folder_id:str = None, new_parent_folder_id:str = None, **kwargs):
         """Run the tool to search for a folder by name and move its contents to a new parent folder."""
 
         if new_parent_folder_name.lower() in ["root", "google drive", "my drive", "general google drive"]:
@@ -419,7 +419,7 @@ class FileOrganizerTool(BaseTool):
 
         return "Files organized successfully. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
 
-    def _run(self, parent_folder_name: str = None):
+    def _run(self, parent_folder_name: str = None, **kwargs):
         """Run the tool to organize files in Google Drive."""
         
         parent_folder_id = None
@@ -503,27 +503,35 @@ class ImprovedSearchTool(BaseTool):
             return None
 
         if len(items) == 1:
-            return f"{1}: {items[0]['name']} (ID: {items[0]['id']}, Type: {items[0]['mimeType']})"
+            return [f"{1}: {items[0]['name']} (ID: {items[0]['id']}, Type: {items[0]['mimeType']})"]
 
-        # Multiple matches found
-        enumerated_items = [
-            f"{index + 1}: {item['name']} (ID: {item['id']}, Type: {item['mimeType']})"
-            for index, item in enumerate(items)
-        ]
-        return enumerated_items
+        # # Multiple matches found
+        # enumerated_items = [
+        #     f"{index + 1}: {item['name']} (ID: {item['id']}, Type: {item['mimeType']})"
+        #     for index, item in enumerate(items)
+        # ]
+        # return enumerated_items
+        result_list = []
+        for index, item in enumerate(items):
+            result_list.append(f"{index + 1}: {item['name']} (ID: {item['id']}, Type: {item['mimeType']})")
 
-    def _run(self, name: str = None, id: str = None):
+        return result_list
+
+    def _run(self, name: str = None, id: str = None, **kwargs):
         """Run the tool to search for files and folders by name and ask the user to select the correct one if multiple matches are found."""
         if id:
             item = self.get_file_or_folder_by_id(id)
             if item:
-                return f"Retrieved item: {item['name']} (ID: {item['id']}, Type: {item['mimeType']}). PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
+                return f"Retrieved item: {item['name']} (ID: {item['id']}, Type: {item['mimeType']})."
             else:
                 return "Item not found or insufficient permissions. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
 
         if name:
             items = self.search_files_and_folders(name)
             enumerated_items = self.list_matches_and_ask_user(items)
+
+            if not enumerated_items:
+                return f"Item with name {name} was not found. Please try creating the item or any other action you deem fit."
 
             if len(enumerated_items) > 1:
                 return "Multiple matches found:\n" + "\n".join(enumerated_items) + "\nPlease ASK THE HUMAN TO specify the number of the correct item."

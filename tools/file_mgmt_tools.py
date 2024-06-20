@@ -17,17 +17,13 @@ class CreateFolderTool(BaseTool):
         self.authenticate()
 
     def authenticate(self):
-        """Authenticate the user with Google Drive API using OAuth 2.0."""
-        if os.path.exists('token.json'):
-            self.creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+        
         if not self.creds or not self.creds.valid:
             if self.creds and self.creds.expired and self.creds.refresh_token:
                 self.creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
                 self.creds = flow.run_local_server(port=0)
-            with open('token.json', 'w') as token:
-                token.write(self.creds.to_json())
                 
         self.service = build('drive', 'v3', credentials=self.creds)
 
@@ -101,17 +97,13 @@ class MoveFileTool(BaseTool):
         self.authenticate()
 
     def authenticate(self):
-        """Authenticate the user with Google Drive API using OAuth 2.0."""
-        if os.path.exists('token.json'):
-            self.creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+        
         if not self.creds or not self.creds.valid:
             if self.creds and self.creds.expired and self.creds.refresh_token:
                 self.creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
                 self.creds = flow.run_local_server(port=0)
-            with open('token.json', 'w') as token:
-                token.write(self.creds.to_json())
         
         self.service = build('drive', 'v3', credentials=self.creds)
         print("Authentication successful.")
@@ -169,7 +161,7 @@ class MoveFileTool(BaseTool):
 SCOPES = ['https://www.googleapis.com/auth/drive']
 
 class FolderMovementTool(BaseTool):
-    name = "Folder movement tool"
+    name = "FolderMovementTool"
     description = "Manages folders in Google Drive using OAuth 2.0 for secure user authentication. Provides functionality to move folders and their contents."
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
 
@@ -183,17 +175,13 @@ class FolderMovementTool(BaseTool):
         self.authenticate()
 
     def authenticate(self):
-        """Authenticate the user with Google Drive API using OAuth 2.0."""
-        if os.path.exists('token.json'):
-            self.creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+        
         if not self.creds or not self.creds.valid:
             if self.creds and self.creds.expired and self.creds.refresh_token:
                 self.creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
                 self.creds = flow.run_local_server(port=0)
-            with open('token.json', 'w') as token:
-                token.write(self.creds.to_json())
         self.service = build('drive', 'v3', credentials=self.creds)
 
     def search_folder(self, folder_name: str):
@@ -310,17 +298,13 @@ class FileOrganizerTool(BaseTool):
         self.authenticate()
 
     def authenticate(self):
-        """Authenticate the user with Google Drive API using OAuth 2.0."""
-        if os.path.exists('token.json'):
-            self.creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+        
         if not self.creds or not self.creds.valid:
             if self.creds and self.creds.expired and self.creds.refresh_token:
                 self.creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
                 self.creds = flow.run_local_server(port=0)
-            with open('token.json', 'w') as token:
-                token.write(self.creds.to_json())
         self.service = build('drive', 'v3', credentials=self.creds)
 
     def list_unorganized_files(self, parent_folder_id=None):
@@ -436,6 +420,8 @@ class FileOrganizerTool(BaseTool):
             #     return "Parent folder not found. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
         elif parent_folder_name.lower() == 'root':
             parent_folder_id = None
+            result = self.organize_files(parent_folder_id)
+            return result if result else "Operation failed. STOP ALL WORK!!!"
         elif parent_folder_id:
             result = self.organize_files(parent_folder_id)
             return result if result else "Operation failed. STOP ALL WORK!!!"
@@ -460,17 +446,13 @@ class ImprovedSearchTool(BaseTool):
         self.authenticate()
 
     def authenticate(self):
-        """Authenticate the user with Google Drive API using OAuth 2.0."""
-        if os.path.exists('token.json'):
-            self.creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+        
         if not self.creds or not self.creds.valid:
             if self.creds and self.creds.expired and self.creds.refresh_token:
                 self.creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
                 self.creds = flow.run_local_server(port=0)
-            with open('token.json', 'w') as token:
-                token.write(self.creds.to_json())
         self.service = build('drive', 'v3', credentials=self.creds)
 
     def get_file_or_folder_by_id(self, id: str):
@@ -492,7 +474,7 @@ class ImprovedSearchTool(BaseTool):
                 query = f"name contains '{name}' and trashed = false"
                 results = self.service.files().list(
                     q=query,
-                    fields="nextPageToken, files(id, name, mimeType)",
+                    fields="nextPageToken, files(id, name, mimeType, createdTime, modifiedTime)",
                     pageToken=page_token
                 ).execute()
                 items.extend(results.get('files', []))
@@ -511,7 +493,7 @@ class ImprovedSearchTool(BaseTool):
             return None
 
         if len(items) == 1:
-            return [f"{1}: {items[0]['name']} (ID: {items[0]['id']}, Type: {items[0]['mimeType']})"]
+            return [f"{1}: {items[0]['name']} (ID: {items[0]['id']}, Type: {items[0]['mimeType']}, CreatedTime: {items[0]['createdTime']}, ModifiedTime: {items[0]['modifiedTime']})"]
 
         # # Multiple matches found
         # enumerated_items = [
@@ -521,7 +503,7 @@ class ImprovedSearchTool(BaseTool):
         # return enumerated_items
         result_list = []
         for index, item in enumerate(items):
-            result_list.append(f"{index + 1}: {item['name']} (ID: {item['id']}, Type: {item['mimeType']})")
+            result_list.append(f"{index + 1}: {item['name']} (ID: {item['id']}, Type: {item['mimeType']}, CreatedTime: {items['createdTime']}, ModifiedTime: {items['modifiedTime']})")
 
         return result_list
 
@@ -530,7 +512,7 @@ class ImprovedSearchTool(BaseTool):
         if id:
             item = self.get_file_or_folder_by_id(id)
             if item:
-                return f"Retrieved item: {item['name']} (ID: {item['id']}, Type: {item['mimeType']})."
+                return f"Retrieved item: {item['name']} (ID: {item['id']}, Type: {item['mimeType']}, CreatedTime: {items['createdTime']}, ModifiedTime: {items['modifiedTime']})."
             else:
                 return "Item not found or insufficient permissions. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
 
@@ -544,7 +526,7 @@ class ImprovedSearchTool(BaseTool):
             if len(enumerated_items) > 1:
                 return "Multiple matches found:\n" + "\n".join(enumerated_items) + "\nPlease ASK THE HUMAN TO specify the number of the correct item."
             elif len(enumerated_items) == 1:
-                return "SINGLE MATCH FOUND:\n" + "".join(enumerated_items) + "\nPlease CONFIRM WITH THE HUMAN TO specify the number of the correct item."
+                return "SINGLE MATCH FOUND:\n" + "".join(enumerated_items) + "\nPLEASE PROCEED WITH THIS INFORMATION."
             else:
                 return "No matches found. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
         

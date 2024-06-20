@@ -21,17 +21,13 @@ class GoogleDriveUploadTool(BaseTool):
         self.authenticate()
 
     def authenticate(self):
-        """Authenticate the user with Google Drive API using OAuth 2.0."""
-        if os.path.exists('token.json'):
-            self.creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+        
         if not self.creds or not self.creds.valid:
             if self.creds and self.creds.expired and self.creds.refresh_token:
                 self.creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
                 self.creds = flow.run_local_server(port=0)
-            with open('token.json', 'w') as token:
-                token.write(self.creds.to_json())
         self.service = build('drive', 'v3', credentials=self.creds)
 
     def upload_file(self, file_path: str, user_email: str, rename: str = None):
@@ -98,7 +94,7 @@ class GoogleSheetsUpdateTool(BaseTool):
     class Config:
         extra = Extra.allow
 
-    def __init__(self, credentials_path: str, spreadsheet_id: str = "1TSFyiTwctC1tABr2RQouBzLRMCG4RZ7lXdTVi", range_name: str = 'Sheet1'):
+    def __init__(self, credentials_path: str, spreadsheet_id: str = "1TSFyiTwctC1tABr2RQouBzLRMCG4RZ7lXdTVi-I58Mo", range_name: str = 'Sheet1'):
         super().__init__()
         self.credentials_path = credentials_path
         self.spreadsheet_id = spreadsheet_id
@@ -108,18 +104,14 @@ class GoogleSheetsUpdateTool(BaseTool):
         self.authenticate()
 
     def authenticate(self):
-        """Authenticate the user with Google Drive API using OAuth 2.0."""
-        if os.path.exists('token.json'):
-            self.creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+        
         if not self.creds or not self.creds.valid:
             if self.creds and self.creds.expired and self.creds.refresh_token:
                 self.creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
                 self.creds = flow.run_local_server(port=0)
-            with open('token.json', 'w') as token:
-                token.write(self.creds.to_json())
-        self.service = build('drive', 'v3', credentials=self.creds)
+        self.service = build('sheets', 'v4', credentials=self.creds)
 
     def read_file_content(self, file_path):
         with open(file_path, 'r') as file:
@@ -128,20 +120,22 @@ class GoogleSheetsUpdateTool(BaseTool):
 
     def append_row_to_google_sheets(self, values):
         """Appends a row to the specified range in the Google Sheets spreadsheet."""
+        
+        sheet = self.service.spreadsheets()
         body = {'values': values}
-        result = self.service.spreadsheets().values().append(
+        result = sheet.values().append(
             spreadsheetId=self.spreadsheet_id, range=self.range_name,
             valueInputOption="RAW", body=body,
             insertDataOption="INSERT_ROWS"
         ).execute()
         print(f"{result.get('updates').get('updatedCells')} cells appended.")
 
-    def _run(self, name: str, phone_number: str, linkstr: str = None):
+    def _run(self, name: str, phone_number: str, linkstr: str = None, otherlinkstr:str=None):
         """Run the tool to append the row with the given name, phone number, and link to the PDF."""
         fileID = self.read_file_content('file_id_history.txt')
         print(f"Extracted file ID: {fileID}")
         link = f"https://drive.google.com/file/d/{fileID}/view"
-        values = [[name, phone_number, linkstr or link]]
+        values = [[name, phone_number, linkstr or link, otherlinkstr]]
         self.append_row_to_google_sheets(values)
         return "Row appended successfully. YOU ARE DONNNNEEEEEEEEEEEEE!!!!!!!! TOOL EXECUTED SUCCESSFULLY!!!!!!!!!!!!!"
 
@@ -166,19 +160,29 @@ class GmailSendPdfTool(BaseTool):
         self.service = None
         self.authenticate()
 
+    # def authenticate(self):
+    #     """Authenticate the user with Google Drive API using OAuth 2.0."""
+    #     if os.path.exists('token.json'):
+    #         self.creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    #     if not self.creds or not self.creds.valid:
+    #         if self.creds and self.creds.expired and self.creds.refresh_token:
+    #             self.creds.refresh(Request())
+    #         else:
+    #             flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
+    #             self.creds = flow.run_local_server(port=0)
+    #         with open('token.json', 'w') as token:
+    #             token.write(self.creds.to_json())
+    #     self.service = build('gmail', 'v1', credentials=self.creds)
     def authenticate(self):
-        """Authenticate the user with Google Drive API using OAuth 2.0."""
-        if os.path.exists('token.json'):
-            self.creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+        
         if not self.creds or not self.creds.valid:
             if self.creds and self.creds.expired and self.creds.refresh_token:
                 self.creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
                 self.creds = flow.run_local_server(port=0)
-            with open('token.json', 'w') as token:
-                token.write(self.creds.to_json())
-        self.service = build('drive', 'v3', credentials=self.creds)
+            
+        self.service = build('gmail', 'v1', credentials=self.creds)
 
     def send_email(self, sender_email, recipient_email, subject, body, pdf_path=None):
         """Send an email with an optional PDF attachment."""
@@ -215,6 +219,10 @@ class GmailSendPdfTool(BaseTool):
 
     def _arun(self):
         raise NotImplementedError("This tool does not support asynchronous operation yet.")
+
+
+
+    
     
 
 

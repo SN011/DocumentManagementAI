@@ -28,7 +28,7 @@ llm = ChatGroq(groq_api_key = client.api_key,
 if "vector" not in st.session_state:
     st.session_state.embeddings = HuggingFaceEmbeddings()
     
-    st.session_state["loader"] = WebBaseLoader("https://docs.smith.langchain.com/")
+    st.session_state["loader"] = PyPDFLoader('C:\\DEV\\WebdevFolder\\RealEstateAI\\documents\\MyDocument.pdf')
     st.session_state["docs"] = st.session_state["loader"].load() 
 
     st.session_state["text_splitter"] = RecursiveCharacterTextSplitter(chunk_size=1000,chunk_overlap=200)

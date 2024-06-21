@@ -1,7 +1,7 @@
 from tools.imports import *
 from googleapiclient.http import MediaFileUpload
 
-SCOPES = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive']
+
 
 class GoogleDriveUploadTool(BaseTool):
     name = "GoogleDriveUploadTool"
@@ -10,7 +10,7 @@ class GoogleDriveUploadTool(BaseTool):
                    "to Google Drive. STOP AFTER ONE-TIME SUCCESSFUL EXECUTION")
 
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
-
+    
     class Config:
         extra = Extra.allow
 
@@ -26,7 +26,7 @@ class GoogleDriveUploadTool(BaseTool):
             if self.creds and self.creds.expired and self.creds.refresh_token:
                 self.creds.refresh(Request())
             else:
-                flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
+                flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, ['https://www.googleapis.com/auth/drive'])
                 self.creds = flow.run_local_server(port=0)
         self.service = build('drive', 'v3', credentials=self.creds)
 
@@ -109,7 +109,7 @@ class GoogleSheetsUpdateTool(BaseTool):
             if self.creds and self.creds.expired and self.creds.refresh_token:
                 self.creds.refresh(Request())
             else:
-                flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
+                flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, ['https://www.googleapis.com/auth/spreadsheets'])
                 self.creds = flow.run_local_server(port=0)
         self.service = build('sheets', 'v4', credentials=self.creds)
 
@@ -179,7 +179,7 @@ class GmailSendPdfTool(BaseTool):
             if self.creds and self.creds.expired and self.creds.refresh_token:
                 self.creds.refresh(Request())
             else:
-                flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
+                flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, ['https://www.googleapis.com/auth/gmail.send'])
                 self.creds = flow.run_local_server(port=0)
             
         self.service = build('gmail', 'v1', credentials=self.creds)

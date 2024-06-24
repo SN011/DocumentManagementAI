@@ -1,3 +1,4 @@
+from collections import defaultdict
 from tools.imports import *
 
 SCOPES = ['https://www.googleapis.com/auth/drive']
@@ -431,7 +432,7 @@ class FileOrganizerTool(BaseTool):
 
 SCOPES = ['https://www.googleapis.com/auth/drive']
 
-class ImprovedSearchTool(BaseTool):
+class OldImprovedSearchTool(BaseTool):
     name = "ImprovedSearchTool"
     description = "Searches for files and folders in Google Drive using OAuth 2.0 for secure user authentication. If multiple matches are found, it lists them and asks the user to select the correct one."
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
@@ -461,8 +462,8 @@ class ImprovedSearchTool(BaseTool):
             item = self.service.files().get(fileId=id, fields='id, name, mimeType').execute()
             return item
         except HttpError as error:
-            print(f'An error occurred while retrieving the item: {error}')
-            return None
+            return(f'An error occurred while retrieving the item: {error}')
+            
         
     def search_files_and_folders(self, name: str):
         """Search for files and folders by name in Google Drive with pagination."""
@@ -495,12 +496,7 @@ class ImprovedSearchTool(BaseTool):
         if len(items) == 1:
             return [f"{1}: {items[0]['name']} (ID: {items[0]['id']}, Type: {items[0]['mimeType']}, CreatedTime: {items[0]['createdTime']}, ModifiedTime: {items[0]['modifiedTime']})"]
 
-        # # Multiple matches found
-        # enumerated_items = [
-        #     f"{index + 1}: {item['name']} (ID: {item['id']}, Type: {item['mimeType']})"
-        #     for index, item in enumerate(items)
-        # ]
-        # return enumerated_items
+        
         result_list = []
         for index, item in enumerate(items):
             result_list.append(f"{index + 1}: {item['name']} (ID: {item['id']}, Type: {item['mimeType']}, CreatedTime: {items['createdTime']}, ModifiedTime: {items['modifiedTime']})")
@@ -532,6 +528,202 @@ class ImprovedSearchTool(BaseTool):
         
         return "Please provide either a name or an ID. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
 
+
+    def _arun(self):
+        raise NotImplementedError("This tool does not support asynchronous operation yet.")
+
+SCOPES = ['https://www.googleapis.com/auth/drive']
+
+class ImprovedSearchTool(BaseTool):
+    name = "ImprovedSearchTool"
+    description = "Searches for files and folders in Google Drive using OAuth 2.0 for secure user authentication. If multiple matches are found, it lists them and asks the user to select the correct one."
+    credentials_path: str = Field(..., description="Path to the credentials JSON file")
+
+    class Config:
+        extra = Extra.allow
+
+    def __init__(self, credentials_path: str):
+        super().__init__()
+        self.credentials_path = credentials_path
+        self.creds = None
+        self.authenticate()
+        self.output_dir = 'drive_batches'
+        self.map_output_dir = 'mapped_batches'
+        self.reduce_output_dir = 'final_aggregated'
+
+    def authenticate(self):
+        if not self.creds or not self.creds.valid:
+            if self.creds and self.creds.expired and self.creds.refresh_token:
+                self.creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
+                self.creds = flow.run_local_server(port=0)
+        self.service = build('drive', 'v3', credentials=self.creds)
+
+    def get_file_or_folder_by_id(self, id: str):
+        """Retrieve a file or folder by its ID."""
+        try:
+            item = self.service.files().get(fileId=id, fields='id, name, mimeType, createdTime, modifiedTime').execute()
+            return item
+        except HttpError as error:
+            return(f'An error occurred while retrieving the item: {error}')
+            
+        
+    def list_files_and_write(self, batch_size=100):
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+
+        page_token = None
+        batch_num = 0
+        file_count = 0
+        batch_data = []
+
+        while True:
+            try:
+                response = self.service.files().list(
+                    q="'me' in owners",
+                    spaces='drive',
+                    fields='nextPageToken, files(id, name, mimeType, createdTime, modifiedTime)',
+                    pageToken=page_token
+                ).execute()
+
+                items = response.get('files', [])
+                if not items:
+                    break
+
+                for item in items:
+                    batch_data.append(item)
+                    file_count += 1
+
+                    if file_count >= batch_size:
+                        batch_file = os.path.join(self.output_dir, f'batch_{batch_num}.json')
+                        with open(batch_file, 'w') as f:
+                            json.dump(batch_data, f, indent=4)
+
+                        batch_num += 1
+                        file_count = 0
+                        batch_data = []
+
+                page_token = response.get('nextPageToken', None)
+                if page_token is None:
+                    break
+            except Exception as error:
+                print(f'An error occurred during listing: {error}')
+                break
+
+        if batch_data:
+            batch_file = os.path.join(self.output_dir, f'batch_{batch_num}.json')
+            with open(batch_file, 'w') as f:
+                json.dump(batch_data, f, indent=4)
+
+    def map_function(self, batch_file, output_dir):
+        with open(batch_file, 'r') as f:
+            items = json.load(f)
+
+        mapped_data = defaultdict(list)
+        for item in items:
+            date_key = item['createdTime'][:10]
+            file_info = {
+                'id': item['id'],
+                'name': item['name'],
+                'type': item['mimeType'],
+                'created_time': item['createdTime'],
+                'modified_time': item['modifiedTime']
+            }
+            mapped_data[date_key].append(file_info)
+
+        for date, files in mapped_data.items():
+            output_file = os.path.join(output_dir, f'{date}.json')
+            with open(output_file, 'a') as f:
+                json.dump(files, f)
+                f.write("\n")
+
+    def reduce_function(self, input_dir, output_dir):
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        for map_file in os.listdir(input_dir):
+            if map_file.endswith('.json'):
+                aggregated_data = defaultdict(list)
+                with open(os.path.join(input_dir, map_file), 'r') as f:
+                    for line in f:
+                        batch_data = json.loads(line)
+                        for item in batch_data:
+                            aggregated_data[item['created_time'][:10]].append(item)
+
+                for date, files in aggregated_data.items():
+                    output_file = os.path.join(output_dir, f'final_{date}.json')
+                    with open(output_file, 'w') as f:
+                        json.dump(files, f, indent=4)
+
+    def search_files_and_folders_in_batches(self, name: str):
+        unique_items = set()
+        folder_items = []
+
+        for output_file in os.listdir(self.reduce_output_dir):
+            if output_file.endswith('.json'):
+                with open(os.path.join(self.reduce_output_dir, output_file), 'r') as f:
+                    data = json.load(f)
+                    for item in data:
+                        if item['name'].lower() == name.lower():
+                            if item['id'] not in unique_items:
+                                unique_items.add(item['id'])
+                                folder_items.append(item)
+        
+        if not folder_items:
+            print(f"No folder named '{name}' found.")
+        else:
+            print(f"Found folder(s) named '{name}':")
+            for item in folder_items:
+                print(f"Name: {item['name']}, ID: {item['id']}, Created Time: {item['created_time']}, Modified Time: {item['modified_time']}")
+        return folder_items
+
+    def list_matches_and_ask_user(self, items):
+        
+        if not items:
+            return None
+
+        if len(items) == 1:
+            return [f"{1}: {items[0]['name']} (ID: {items[0]['id']}, Type: {items[0]['type']}, CreatedTime: {items[0]['created_time']}, ModifiedTime: {items[0]['modified_time']})"]
+
+        result_list = []
+        for index, item in enumerate(items):
+            result_list.append(f"{index + 1}: {item['name']} (ID: {item['id']}, Type: {item['type']}, CreatedTime: {item['created_time']}, ModifiedTime: {item['modified_time']})")
+
+        return result_list
+
+    def _run(self, name: str = None, id: str = None, **kwargs):
+        if id:
+            item = self.get_file_or_folder_by_id(id)
+            if item:
+                return f"Retrieved item: {item['name']} (ID: {item['id']}, Type: {item['mimeType']}, CreatedTime: {item['createdTime'][:10]}, ModifiedTime: {item['modifiedTime'][:10]}). STOP ALL WORK PLEASE!!! DO NOT DO ANYTHING UNTIL HUMAN GIVES THE INDICATION."
+            else:
+                return "Item not found or insufficient permissions."
+
+        if name:
+            
+            if not os.listdir(self.output_dir):
+                self.list_files_and_write()
+                for batch_file in os.listdir(self.output_dir):
+                    self.map_function(os.path.join(self.output_dir, batch_file), self.map_output_dir)
+                self.reduce_function(self.map_output_dir, self.reduce_output_dir)
+
+            items = self.search_files_and_folders_in_batches(name)
+            #print('ITEMS LOOKS LIKE THIS: ', items)
+            enumerated_items = self.list_matches_and_ask_user(items)
+
+            if not enumerated_items:
+                return f"Item with name {name} was not found. Please try creating the item or take any other action you deem fit (like asking human for correction)."
+
+            if len(enumerated_items) > 1:
+                return "Multiple matches found:\n" + "\n".join(enumerated_items) + "\nASK THIS TO THE HUMAN: Please specify the number of the correct item. THEN PASS IN ID OF THE SELECTED ITEM INTO THIS SAME TOOL INTO THE 'id' PARAMETER!!!!!!"
+            elif len(enumerated_items) == 1:
+                return "SINGLE MATCH FOUND:\n" + "".join(enumerated_items) + "\nPLEASE PROCEED WITH THIS INFORMATION."
+            else:
+                return "No matches found."
+
+        
+        return "Please provide either a name or an ID."
 
     def _arun(self):
         raise NotImplementedError("This tool does not support asynchronous operation yet.")

@@ -696,7 +696,7 @@ class ImprovedSearchTool(BaseTool):
         if id:
             item = self.get_file_or_folder_by_id(id)
             if item:
-                return f"Retrieved item: {item['name']} (ID: {item['id']}, Type: {item['mimeType']}, CreatedTime: {item['createdTime'][:10]}, ModifiedTime: {item['modifiedTime'][:10]}). STOP ALL WORK PLEASE!!! DO NOT DO ANYTHING UNTIL HUMAN GIVES THE INDICATION."
+                return f"Retrieved item: {item['name']} (ID: {item['id']}, Type: {item['mimeType']}, CreatedTime: {item['createdTime'][:10]}, ModifiedTime: {item['modifiedTime'][:10]}). YOU HAVE RETRIEVED THE ITEM!!!!!!!!!!!"
             else:
                 return "Item not found or insufficient permissions."
 

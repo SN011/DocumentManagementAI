@@ -22,17 +22,12 @@ class GoogleDocWriteTool(BaseTool):
         self.authenticate()
 
     def authenticate(self):
-        """Authenticate the user with Google Drive API using OAuth 2.0."""
-        if os.path.exists('token.json'):
-            self.creds = Credentials.from_authorized_user_file('token.json', SCOPES)
         if not self.creds or not self.creds.valid:
             if self.creds and self.creds.expired and self.creds.refresh_token:
                 self.creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
                 self.creds = flow.run_local_server(port=0)
-            with open('token.json', 'w') as token:
-                token.write(self.creds.to_json())
         
         self.docs_service = build('docs', 'v1', credentials=self.creds)
         self.drive_service = build('drive', 'v3', credentials=self.creds)

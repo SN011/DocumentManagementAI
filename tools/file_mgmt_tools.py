@@ -709,7 +709,7 @@ class ImprovedSearchTool(BaseTool):
                 self.reduce_function(self.map_output_dir, self.reduce_output_dir)
 
             items = self.search_files_and_folders_in_batches(name)
-            #print('ITEMS LOOKS LIKE THIS: ', items)
+            
             enumerated_items = self.list_matches_and_ask_user(items)
 
             if not enumerated_items:

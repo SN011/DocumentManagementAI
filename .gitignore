@@ -146,3 +146,4 @@ tools/__pycache__/imports.cpython-312.pyc
 tools/__pycache__/initialize_groq.cpython-312.pyc
 tools/__pycache__/miscellaneous_mgmt.cpython-312.pyc
 tools/__pycache__/document_tools.cpython-312.pyc
+tools/__pycache__/file_mgmt_tools.cpython-312.pyc

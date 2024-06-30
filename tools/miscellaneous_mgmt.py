@@ -89,8 +89,7 @@ class GoogleSheetsUpdateTool(BaseTool):
         self.credentials_path = credentials_path
         self.spreadsheet_id = spreadsheet_id
         self.range_name = range_name
-        self.creds = None
-        self.service = authenticate()
+        self.creds = authenticate()
         self.service = build('sheets', 'v4', credentials=self.creds)
 
     def read_file_content(self, file_path):
@@ -136,8 +135,7 @@ class GmailSendPdfTool(BaseTool):
     def __init__(self, credentials_path: str):
         super().__init__()
         self.credentials_path = credentials_path
-        self.creds = None
-        self.service = authenticate()
+        self.creds = authenticate()
         self.service = build('gmail', 'v1', credentials=self.creds)
 
     def send_email(self, sender_email, recipient_email, subject, body, pdf_path=None):

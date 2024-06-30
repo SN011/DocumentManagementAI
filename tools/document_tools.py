@@ -1,6 +1,6 @@
 from tools.imports import *
 import tools.initialize_groq
-from auth import authenticate
+from tools.auth import authenticate
 
 client,_ = tools.initialize_groq.init_groq()
 

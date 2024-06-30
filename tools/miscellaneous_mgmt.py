@@ -1,6 +1,6 @@
 from tools.imports import *
 from googleapiclient.http import MediaFileUpload
-
+from tools.auth import authenticate
 
 
 class GoogleDriveUploadTool(BaseTool):
@@ -17,17 +17,7 @@ class GoogleDriveUploadTool(BaseTool):
     def __init__(self, credentials_path: str):
         super().__init__()
         self.credentials_path = credentials_path
-        self.creds = None
-        self.authenticate()
-
-    def authenticate(self):
-        
-        if not self.creds or not self.creds.valid:
-            if self.creds and self.creds.expired and self.creds.refresh_token:
-                self.creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, ['https://www.googleapis.com/auth/drive'])
-                self.creds = flow.run_local_server(port=0)
+        self.creds = authenticate()
         self.service = build('drive', 'v3', credentials=self.creds)
 
     def upload_file(self, file_path: str, user_email: str, rename: str = None):
@@ -100,17 +90,7 @@ class GoogleSheetsUpdateTool(BaseTool):
         self.spreadsheet_id = spreadsheet_id
         self.range_name = range_name
         self.creds = None
-        self.service = None
-        self.authenticate()
-
-    def authenticate(self):
-        
-        if not self.creds or not self.creds.valid:
-            if self.creds and self.creds.expired and self.creds.refresh_token:
-                self.creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, ['https://www.googleapis.com/auth/spreadsheets'])
-                self.creds = flow.run_local_server(port=0)
+        self.service = authenticate()
         self.service = build('sheets', 'v4', credentials=self.creds)
 
     def read_file_content(self, file_path):
@@ -157,31 +137,7 @@ class GmailSendPdfTool(BaseTool):
         super().__init__()
         self.credentials_path = credentials_path
         self.creds = None
-        self.service = None
-        self.authenticate()
-
-    # def authenticate(self):
-    #     """Authenticate the user with Google Drive API using OAuth 2.0."""
-    #     if os.path.exists('token.json'):
-    #         self.creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-    #     if not self.creds or not self.creds.valid:
-    #         if self.creds and self.creds.expired and self.creds.refresh_token:
-    #             self.creds.refresh(Request())
-    #         else:
-    #             flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
-    #             self.creds = flow.run_local_server(port=0)
-    #         with open('token.json', 'w') as token:
-    #             token.write(self.creds.to_json())
-    #     self.service = build('gmail', 'v1', credentials=self.creds)
-    def authenticate(self):
-        
-        if not self.creds or not self.creds.valid:
-            if self.creds and self.creds.expired and self.creds.refresh_token:
-                self.creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, ['https://www.googleapis.com/auth/gmail.send'])
-                self.creds = flow.run_local_server(port=0)
-            
+        self.service = authenticate()
         self.service = build('gmail', 'v1', credentials=self.creds)
 
     def send_email(self, sender_email, recipient_email, subject, body, pdf_path=None):

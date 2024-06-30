@@ -1,6 +1,6 @@
 from collections import defaultdict
 from tools.imports import *
-from auth import authenticate
+from tools.auth import authenticate
 
 SCOPES = ['https://www.googleapis.com/auth/drive']
 

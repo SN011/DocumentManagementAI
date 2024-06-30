@@ -32,7 +32,63 @@ class GoogleDocWriteTool(BaseTool):
         self.docs_service = build('docs', 'v1', credentials=self.creds)
         self.drive_service = build('drive', 'v3', credentials=self.creds)
     
-    def make_docmgr_write_to_file(self,cc_out):
+    # def make_docmgr_write_to_file(self,cc_out):
+    #     chat_completion = client.chat.completions.create(
+    #         messages=[
+    #             {
+    #                 "role": "system",
+    #                 "content": """You are a detailed and professional assistant. Your task is to generate comprehensive and detailed formatted text. 
+    #                 Ensure everything is included !!!!! DO NOT DO NOT DO NOTTTTTTT summarize or truncate any content. OR ELSE I WILL GET REALLY MAD YOU MUST INCLUDE EVERYTHING INCLUDE EVERYTHHIINGNGNGNGNGNGNGGGG!!!!!!!
+    #                 Your response must be well-formed and include all details. 
+
+    #                 You must ALWAYS ALWAYS ALWAYS!!!!! output in a structured format as follows AND NO QUOTATION MARKS OR BACKSLASHES!:
+                    
+                                
+    #                 {
+    #                     "title": "The Great Renovation",
+    #                     "sections": [
+    #                         {
+    #                             "content": "<specific text content>",
+    #                             "font_name": "<font family>",
+    #                             "font_size": <integer specifying font size>,
+    #                             "bold": <true or false>,
+    #                             "italic": <true or false>,
+    #                             "alignment": "<right, left, justify or center>"
+    #                             "color": [<integer for red>, <integer for green>, <integer for blue>]
+    #                         },
+    #                         {
+    #                             "content": "<another specific text content>",
+    #                             "font_name": "<another font family>",
+    #                             "font_size": <another integer specifying font size>,
+    #                             "bold": <true or false>,
+    #                             "italic": <true or false>,
+    #                             "alignment": "<right, left, justify or center>"
+    #                             "color": [<integer for red>, <integer for green>, <integer for blue>]
+    #                         }
+    #                         // ... more sections as needed
+    #                     ],
+    #                     "append": <true or false> (this indicates appending to document or not)
+    #                 }
+    #                 PLEASE! Ensure the output is well-formed and valid."""
+    #             },
+    #             {
+    #                 "role": "user",
+    #                 "content": "Give whatever file title you want;NO COLONS!ONLY HYPHENS!. Please Include a new title IN THE DOCUMENT, headings if you deem fit, and please format in a nice readable and coherent way.  \
+    #                     Specify the formatting for this text. Please make it a \
+    #                         PROFESSIONALLY formatted text WITH black & blue colors and times new roman font PLEASE. NO NO NO bullet points of ANY KIND unless specified: " + cc_out
+    #             }
+    #         ],
+    #         model="llama3-70b-8192",
+    #     )
+
+    #     cc_out2 = chat_completion.choices[0].message.content
+
+    #     print('CCOUT2\n',cc_out2)
+
+    #     return cc_out2
+
+    
+    def make_docmgr_write_to_file(self, cc_out):
         chat_completion = client.chat.completions.create(
             messages=[
                 {
@@ -41,11 +97,13 @@ class GoogleDocWriteTool(BaseTool):
                     Ensure everything is included !!!!! DO NOT DO NOT DO NOTTTTTTT summarize or truncate any content. OR ELSE I WILL GET REALLY MAD YOU MUST INCLUDE EVERYTHING INCLUDE EVERYTHHIINGNGNGNGNGNGNGGGG!!!!!!!
                     Your response must be well-formed and include all details. 
 
-                    You must ALWAYS ALWAYS ALWAYS!!!!! output in a structured format as follows AND NO QUOTATION MARKS OR BACKSLASHES!:
+                    You must ALWAYS ALWAYS ALWAYS!!!!! output in a structured format as follows AND NO BACKSLASHES!:
                     
-                                
+                     AS INDICATED IN EXAMPLE, THERE MUST BE QUOTAITON MARKS.   
+
+                     HERE IS EXAMPLEEEEEEEE!!!!!!!        
                     {
-                        "title": "The Great Renovation",
+                        "title": "<title>",
                         "sections": [
                             {
                                 "content": "<specific text content>",
@@ -53,7 +111,7 @@ class GoogleDocWriteTool(BaseTool):
                                 "font_size": <integer specifying font size>,
                                 "bold": <true or false>,
                                 "italic": <true or false>,
-                                "alignment": "<right, left, justify or center>"
+                                "alignment": "<right, left, justify or center>",
                                 "color": [<integer for red>, <integer for green>, <integer for blue>]
                             },
                             {
@@ -62,7 +120,7 @@ class GoogleDocWriteTool(BaseTool):
                                 "font_size": <another integer specifying font size>,
                                 "bold": <true or false>,
                                 "italic": <true or false>,
-                                "alignment": "<right, left, justify or center>"
+                                "alignment": "<right, left, justify or center>",
                                 "color": [<integer for red>, <integer for green>, <integer for blue>]
                             }
                             // ... more sections as needed
@@ -73,7 +131,7 @@ class GoogleDocWriteTool(BaseTool):
                 },
                 {
                     "role": "user",
-                    "content": "Give whatever file title you want;NO COLONS!ONLY HYPHENS!. Please Include a new title IN THE DOCUMENT, headings if you deem fit, and please format in a nice readable and coherent way.  \
+                    "content": "GIVE ONLY THE FILE TITLE THE USER WANTS;NO COLONS!ONLY HYPHENS!. Please Include a new title IN THE DOCUMENT, headings if you deem fit, and please format in a nice readable and coherent way.  \
                         Specify the formatting for this text. Please make it a \
                             PROFESSIONALLY formatted text WITH black & blue colors and times new roman font PLEASE. NO NO NO bullet points of ANY KIND unless specified: " + cc_out
                 }
@@ -83,12 +141,9 @@ class GoogleDocWriteTool(BaseTool):
 
         cc_out2 = chat_completion.choices[0].message.content
 
-        print('CCOUT2\n',cc_out2)
+        print('CCOUT2\n', cc_out2)
 
         return cc_out2
-
-    
-    
 
     def create_google_doc(self,title):
         body = {

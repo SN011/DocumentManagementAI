@@ -1,5 +1,6 @@
 from collections import defaultdict
 from tools.imports import *
+from auth import authenticate
 
 SCOPES = ['https://www.googleapis.com/auth/drive']
 
@@ -14,20 +15,9 @@ class CreateFolderTool(BaseTool):
     def __init__(self, credentials_path: str):
         super().__init__()
         self.credentials_path = credentials_path
-        self.creds = None
-        self.authenticate()
-
-    def authenticate(self):
-        
-        if not self.creds or not self.creds.valid:
-            if self.creds and self.creds.expired and self.creds.refresh_token:
-                self.creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
-                self.creds = flow.run_local_server(port=0)
-                
+        self.creds = authenticate()
         self.service = build('drive', 'v3', credentials=self.creds)
-
+    
     def search_folder(self, folder_name: str, parent_folder_id: str = None):
         """Search for a folder by name in Google Drive."""
         try:
@@ -94,20 +84,8 @@ class MoveFileTool(BaseTool):
     def __init__(self, credentials_path: str):
         super().__init__()
         self.credentials_path = credentials_path
-        self.creds = None
-        self.authenticate()
-
-    def authenticate(self):
-        
-        if not self.creds or not self.creds.valid:
-            if self.creds and self.creds.expired and self.creds.refresh_token:
-                self.creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
-                self.creds = flow.run_local_server(port=0)
-        
+        self.creds = authenticate()
         self.service = build('drive', 'v3', credentials=self.creds)
-        print("Authentication successful.")
 
     def move_file(self, file_id: str, folder_id: str):
         """Move the file to the new folder."""
@@ -172,17 +150,7 @@ class FolderMovementTool(BaseTool):
     def __init__(self, credentials_path: str):
         super().__init__()
         self.credentials_path = credentials_path
-        self.creds = None
-        self.authenticate()
-
-    def authenticate(self):
-        
-        if not self.creds or not self.creds.valid:
-            if self.creds and self.creds.expired and self.creds.refresh_token:
-                self.creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
-                self.creds = flow.run_local_server(port=0)
+        self.creds = authenticate()
         self.service = build('drive', 'v3', credentials=self.creds)
 
     def search_folder(self, folder_name: str):
@@ -295,17 +263,7 @@ class FileOrganizerTool(BaseTool):
     def __init__(self, credentials_path: str):
         super().__init__()
         self.credentials_path = credentials_path
-        self.creds = None
-        self.authenticate()
-
-    def authenticate(self):
-        
-        if not self.creds or not self.creds.valid:
-            if self.creds and self.creds.expired and self.creds.refresh_token:
-                self.creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
-                self.creds = flow.run_local_server(port=0)
+        self.creds = authenticate()
         self.service = build('drive', 'v3', credentials=self.creds)
 
     def list_unorganized_files(self, parent_folder_id=None):
@@ -545,19 +503,10 @@ class ImprovedSearchTool(BaseTool):
     def __init__(self, credentials_path: str):
         super().__init__()
         self.credentials_path = credentials_path
-        self.creds = None
-        self.authenticate()
+        self.creds = authenticate()
         self.output_dir = 'drive_batches'
         self.map_output_dir = 'mapped_batches'
         self.reduce_output_dir = 'final_aggregated'
-
-    def authenticate(self):
-        if not self.creds or not self.creds.valid:
-            if self.creds and self.creds.expired and self.creds.refresh_token:
-                self.creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
-                self.creds = flow.run_local_server(port=0)
         self.service = build('drive', 'v3', credentials=self.creds)
 
     def get_file_or_folder_by_id(self, id: str):

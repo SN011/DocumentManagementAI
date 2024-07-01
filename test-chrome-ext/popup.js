@@ -83,41 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // document.getElementById('logoutButton').addEventListener('click', () => {
-    //     console.log('Logout button clicked');
-    //     if (authToken) {
-    //         chrome.identity.removeCachedAuthToken({ token: authToken }, () => {
-    //             console.log('Auth token removed');
-    //             chrome.storage.local.remove('userInfo', () => {
-    //                 console.log('User info removed from storage');
-    //                 // Reset the UI
-    //                 document.getElementById('userInfo').style.display = 'none';
-    //                 document.getElementById('loginPrompt').style.display = 'block';
-    //                 document.getElementById('signInButton').style.display = 'block';
-    //                 document.getElementById('nextButton').style.display = 'none';
-    //                 authToken = '';
-    //                 // Ensure orb is hidden
-    //                 document.querySelector('.orb').style.display = 'none';
-    //                 document.getElementById('googleSignIn').style.display = 'flex';
-    //                 document.getElementById('voiceAssistant').style.display = 'none';
-    //             });
-    //         });
-    //     } else {
-    //         console.log('No auth token found');
-    //         chrome.storage.local.remove('userInfo', () => {
-    //             console.log('User info removed from storage');
-    //             // Reset the UI
-    //             document.getElementById('userInfo').style.display = 'none';
-    //             document.getElementById('loginPrompt').style.display = 'block';
-    //             document.getElementById('signInButton').style.display = 'block';
-    //             document.getElementById('nextButton').style.display = 'none';
-    //             // Ensure orb is hidden
-    //             document.querySelector('.orb').style.display = 'none';
-    //             document.getElementById('googleSignIn').style.display = 'flex';
-    //             document.getElementById('voiceAssistant').style.display = 'none';
-    //         });
-    //     }
-    // });
+    
 
     document.getElementById('logoutButton').addEventListener('click', () => {
       console.log('Logout button clicked');
@@ -199,23 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('.orb').style.display = 'none';
     });
 
-    // document.getElementById('talkButton').addEventListener('click', function() {
-    //     const orb = document.querySelector('.orb');
-    //     orb.classList.add('floating');
-        
-    //     fetch('http://localhost:5000/talk', { method: 'POST' })
-    //         .then(response => response.json())
-    //         .then(data => {
-    //             document.getElementById('response').innerText = data.response;
-    //             orb.classList.remove('floating');
-                
-    //             // Fetch and play the audio
-    //             const audio = document.getElementById('audio');
-    //             audio.src = 'http://localhost:5000/get_audio?' + new Date().getTime(); // Add timestamp to avoid caching
-    //             audio.style.display = 'none'; // Ensure it is not visible
-    //             audio.play();
-    //         });
-    // });
+    
 
     let isRecording = false;
 
@@ -230,13 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // document.addEventListener('keyup', function(event) {
-    //     if (event.key === 'p' || event.key === 'P') {
-    //         if (isRecording) {
-    //             stopRecording();
-    //         }
-    //     }
-    // });
+    
     
     function startRecording() {
         console.log('Start recording');

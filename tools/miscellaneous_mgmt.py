@@ -109,7 +109,7 @@ class GoogleSheetsUpdateTool(BaseTool):
         ).execute()
         print(f"{result.get('updates').get('updatedCells')} cells appended.")
 
-    def _run(self, name: str, phone_number: str, linkstr: str = None, otherlinkstr:str=None):
+    def _run(self, name: str, phone_number: str, linkstr: str = None, otherlinkstr:str=None,**kwargs):
         """Run the tool to append the row with the given name, phone number, and link to the PDF."""
         fileID = self.read_file_content('file_id_history.txt')
         print(f"Extracted file ID: {fileID}")

@@ -259,7 +259,7 @@ class GoogleDocWriteTool(BaseTool):
         items = results.get('files', [])
         return items
     
-    def _run(self, input_text:str, append:bool=False, document_name:str=None):
+    def _run(self, input_text:str, append:bool=False, document_name:str=None,**kwargs):
         try:
             # Parse the input text
             processed_input = self.make_docmgr_write_to_file(str(input_text))

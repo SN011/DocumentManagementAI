@@ -642,6 +642,11 @@ class ImprovedSearchTool(BaseTool):
         return result_list
 
     def _run(self, name: str = None, id: str = None, **kwargs):
+        self.list_files_and_write()
+        for batch_file in os.listdir(self.output_dir):
+            self.map_function(os.path.join(self.output_dir, batch_file), self.map_output_dir)
+        self.reduce_function(self.map_output_dir, self.reduce_output_dir)
+        
         if id:
             item = self.get_file_or_folder_by_id(id)
             if item:
@@ -651,11 +656,8 @@ class ImprovedSearchTool(BaseTool):
 
         if name:
             
-            if not os.listdir(self.output_dir):
-                self.list_files_and_write()
-                for batch_file in os.listdir(self.output_dir):
-                    self.map_function(os.path.join(self.output_dir, batch_file), self.map_output_dir)
-                self.reduce_function(self.map_output_dir, self.reduce_output_dir)
+            
+            
 
             items = self.search_files_and_folders_in_batches(name)
             

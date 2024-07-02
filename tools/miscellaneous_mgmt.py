@@ -75,7 +75,7 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
 class GoogleSheetsUpdateTool(BaseTool):
     name = "GoogleSheetsUpdateTool"
-    description = ("Appends three columns - name, phone number, and link to a PDF - to a preexisting logging google sheet. STOP AFTER ONE-TIME SUCCESSFUL EXECUTION")
+    description = ("Appends three columns - name, phone number, and a URL LINK or LINKS - to a preexisting logging google sheet. STOP AFTER ONE-TIME SUCCESSFUL EXECUTION")
 
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
     spreadsheet_id: str = Field(default="1TSFyiTwctC1tABr2RQouBzLRMCG4RZ7lXdTVi-I58Mo", description="Google Sheets spreadsheet ID")

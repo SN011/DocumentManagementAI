@@ -6,7 +6,7 @@ SCOPES = ['https://www.googleapis.com/auth/drive']
 
 class CreateFolderTool(BaseTool):
     name = "CreateFolderTool"
-    description = "Creates a new folder in Google Drive using OAuth 2.0 for secure user authentication."
+    description = "Creates a new folder in Google Drive using OAuth 2.0 for secure user authentication. USED TO CREATE A SINGLE FOLDER."
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
 
     class Config:
@@ -75,7 +75,7 @@ SCOPES = ['https://www.googleapis.com/auth/drive']
 
 class MoveFileTool(BaseTool):
     name = "MoveFileTool"
-    description = "Moves a file within Google Drive using OAuth 2.0 for secure user authentication. It searches for a file by name and moves it to the specified folder."
+    description = "Moves a file within Google Drive using OAuth 2.0 for secure user authentication. It searches for a file by name and moves it to the specified folder. BASICALLY USED TO MOVE A FILE INTO A FOLDER"
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
 
     class Config:
@@ -141,7 +141,7 @@ SCOPES = ['https://www.googleapis.com/auth/drive']
 
 class FolderMovementTool(BaseTool):
     name = "FolderMovementTool"
-    description = "Manages folders in Google Drive using OAuth 2.0 for secure user authentication. Provides functionality to move folders and their contents."
+    description = "Manages folders in Google Drive using OAuth 2.0 for secure user authentication. Provides functionality to move folders and their contents, BASICALLY USE THIS TO MOVE A FOLDER INTO ANOTHER FOLDER."
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
 
     class Config:
@@ -494,7 +494,7 @@ SCOPES = ['https://www.googleapis.com/auth/drive']
 
 class ImprovedSearchTool(BaseTool):
     name = "ImprovedSearchTool"
-    description = "Searches for files and folders in Google Drive using OAuth 2.0 for secure user authentication. If multiple matches are found, it lists them and asks the user to select the correct one."
+    description = "Searches for files and folders in Google Drive using OAuth 2.0 for secure user authentication. Pass in the name AND/OR ID of the item requested. If multiple matches are found, it lists them and asks the user to select the correct one."
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
 
     class Config:

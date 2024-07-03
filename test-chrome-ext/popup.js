@@ -1,4 +1,22 @@
 let authToken = '';
+let isRecording = false;
+let isPlaying = false;
+
+let socket = io('http://localhost:5000');
+
+socket.on('connect', () => {
+    console.log('Connected to server');
+});
+
+socket.on('tts_complete', (data) => {
+    console.log('TTS synthesis complete:', data.message);
+    const audio = document.getElementById('audio');
+    audio.src = 'http://localhost:5000/get_audio?' + new Date().getTime();
+    audio.style.display = 'block';
+    audio.play().catch(error => {
+        console.error('Error playing audio:', error);
+    });
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded');
@@ -84,33 +102,29 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('logoutButton').addEventListener('click', () => {
-      console.log('Logout button clicked');
-      if (authToken) {
-          // Revoke the access token
-          fetch(`https://accounts.google.com/o/oauth2/revoke?token=${authToken}`, {
-              method: 'GET',
-              mode: 'cors'
-          }).then(response => {
-              if (response.ok) {
-                  console.log('Access token revoked');
-                  clearUserData();
-              } else {
-                  console.error('Error revoking access token');
-                  clearUserData(); // Attempt to clear data even if token revocation fails
-              }
-          }).catch(error => {
-              console.error('Error revoking access token:', error);
-              clearUserData(); // Attempt to clear data even if there's an error
-          });
-      } else {
-          console.log('No auth token found');
-          clearUserData();
-      }
-  });
-  
-  document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded');
-    checkLoginStatus();
+        console.log('Logout button clicked');
+        if (authToken) {
+            // Revoke the access token
+            fetch(`https://accounts.google.com/o/oauth2/revoke?token=${authToken}`, {
+                method: 'GET',
+                mode: 'cors'
+            }).then(response => {
+                if (response.ok) {
+                    console.log('Access token revoked');
+                    clearUserData();
+                } else {
+                    console.error('Error revoking access token');
+                    clearUserData(); // Attempt to clear data even if token revocation fails
+                }
+            }).catch(error => {
+                console.error('Error revoking access token:', error);
+                clearUserData(); // Attempt to clear data even if there's an error
+            });
+        } else {
+            console.log('No auth token found');
+            clearUserData();
+        }
+    });
 
     document.getElementById('nextButton').addEventListener('click', () => {
         console.log('Next button clicked');
@@ -125,204 +139,74 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('voiceAssistant').style.display = 'none';
         document.querySelector('.orb').style.display = 'none';
     });
+
+    document.getElementById('sendTextButton').addEventListener('click', sendTextInput);
+    document.getElementById('textInput').addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            sendTextInput();
+        }
+    });
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'p' || event.key === 'P') {
+            if (!isRecording) {
+                startRecording();
+            } else {
+                stopRecording();
+            }
+        }
+    });
+
+    checkLoginStatus();
 });
 
-
-  function clearUserData() {
-      chrome.identity.removeCachedAuthToken({ token: authToken }, () => {
-          console.log('Auth token removed');
-          chrome.storage.local.remove('userInfo', () => {
-              console.log('User info removed from storage');
-              // Reset the UI
-              document.getElementById('userInfo').style.display = 'none';
-              document.getElementById('loginPrompt').style.display = 'block';
-              document.getElementById('signInButton').style.display = 'block';
-              document.getElementById('nextButton').style.display = 'none';
-              authToken = '';
-              // Ensure orb is hidden
-              document.querySelector('.orb').style.display = 'none';
-              document.getElementById('googleSignIn').style.display = 'flex';
-              document.getElementById('voiceAssistant').style.display = 'none';
-          });
-      });
-  }
-  
-
-
-    document.getElementById('nextButton').addEventListener('click', () => {
-        console.log('Next button clicked');
-        document.getElementById('googleSignIn').style.display = 'none';
-        document.getElementById('voiceAssistant').style.display = 'flex';
-        document.querySelector('.orb').style.display = 'block';
-    });
-
-    document.getElementById('backButton').addEventListener('click', () => {
-        console.log('Back button clicked');
-        document.getElementById('googleSignIn').style.display = 'flex';
-        document.getElementById('voiceAssistant').style.display = 'none';
-        document.querySelector('.orb').style.display = 'none';
-    });
-
-    
-
-    
-    
-    
-
-    // let isRecordingTalk = false;
-    // let isRecordingHuman = false;
-
-    // function startRecordingTalk() {
-    //     console.log('Start recording for talk');
-    //     isRecordingTalk = true;
-
-    //     const orb = document.querySelector('.orb');
-    //     orb.classList.add('floating');
-
-    //     fetch('http://localhost:5000/start_recording_talk', { method: 'POST' })
-    //         .then(response => response.json())
-    //         .then(data => {
-    //             console.log(data.status);
-    //         });
-    // }
-
-    let isPlaying = false;
-
-    function playAudioContinuously() {
-        if (!isPlaying) {
-            isPlaying = true;
-            setInterval(() => {
-                const audio = document.getElementById('audio');
-                audio.src = 'http://localhost:5000/get_audio?' + new Date().getTime();
-                audio.style.display = 'block';
-                audio.play();
-            }, 10000); // Adjust the interval as needed (5000ms = 5 seconds)
-        }
-    }
-
-    // Call this function when you want to start playing the audio continuously
-    playAudioContinuously();
-
-
-    
-
-    // function stopRecordingTalk() {
-    //     console.log('Stop recording for talk');
-    //     isRecordingTalk = false;
-
-    //     const orb = document.querySelector('.orb');
-    //     orb.classList.remove('floating');
-
-    //     fetch('http://localhost:5000/stop_recording_talk', { method: 'POST' })
-    //         .then(response => response.json())
-    //         .then(data => {
-    //             console.log(data.status);
-    //             // Fetch the audio response after stopping the recording
-    //             fetchNormalAudioResponse();
-    //         });
-    // }
-
-    // function startRecordingHuman() {
-    //     console.log('Start recording for human tool');
-    //     isRecordingHuman = true;
-
-    //     const orb = document.querySelector('.orb');
-    //     orb.classList.add('floating');
-
-    //     fetch('http://localhost:5000/start_recording_human', { method: 'POST' })
-    //         .then(response => response.json())
-    //         .then(data => {
-    //             console.log(data.status);
-    //         });
-    // }
-
-    // function stopRecordingHuman() {
-    //     console.log('Stop recording for human tool');
-    //     isRecordingHuman = false;
-
-    //     const orb = document.querySelector('.orb');
-    //     orb.classList.remove('floating');
-
-    //     fetch('http://localhost:5000/stop_recording_human', { method: 'POST' })
-    //         .then(response => response.json())
-    //         .then(data => {
-    //             console.log(data.status);
-    //             // Fetch the audio response after stopping the recording
-    //             fetchHumanToolAudioResponse();
-    //         });
-    // }
-
-    // document.addEventListener('keydown', function(event) {
-    //     if (event.key === 'p' || event.key === 'P') {
-    //         if (isRecordingTalk) {
-    //             stopRecordingTalk();
-    //         } else if (isRecordingHuman) {
-    //             stopRecordingHuman();
-    //         } else {
-    //             // Decide which recording to start based on context or user choice
-    //             startRecordingTalk(); // or startRecordingHuman();
-    //         }
-    //     }
-    // });
-
-    // function fetchNormalAudioResponse() {
-    //     fetch('http://localhost:5000/talk', { method: 'POST' })
-    //         .then(response => response.json())
-    //         .then(data => {
-    //             document.getElementById('response').innerText = data.response;
-                
-    //             const audio = document.getElementById('audio');
-    //             audio.src = 'http://localhost:5000/get_audio?' + new Date().getTime();
-    //             audio.style.display = 'block';
-    //             audio.play();
-    //         });
-    // }
-
-    // function fetchHumanToolAudioResponse() {
-    //     fetch('http://localhost:5000/handle_human_tool_input', { method: 'POST' })
-    //         .then(response => response.json())
-    //         .then(data => {
-    //             document.getElementById('response').innerText = data.response;
-                
-    //             const audio = document.getElementById('audio');
-    //             audio.src = 'http://localhost:5000/get_audio?' + new Date().getTime();
-    //             audio.style.display = 'block';
-    //             audio.play();
-    //         });
-    // }
-
-
-    function checkLoginStatus() {
-        console.log('Checking login status');
-        chrome.storage.local.get('userInfo', (result) => {
-            if (result.userInfo) {
-                console.log('User info found in storage:', result.userInfo);
-                displayUserInfo(result.userInfo);
-                document.getElementById('phoneNumber').value = result.userInfo.phone || '';
-                document.getElementById('recEmail').value = result.userInfo.recemail || '';
-                document.getElementById('nextButton').style.display = 'block';
-            } else {
-                console.log('No user info found in storage');
-                document.getElementById('loginPrompt').style.display = 'block';
-                document.getElementById('signInButton').style.display = 'block';
-                document.getElementById('userInfo').style.display = 'none';
-                document.getElementById('nextButton').style.display = 'none';
-            }
+function clearUserData() {
+    chrome.identity.removeCachedAuthToken({ token: authToken }, () => {
+        console.log('Auth token removed');
+        chrome.storage.local.remove('userInfo', () => {
+            console.log('User info removed from storage');
+            // Reset the UI
+            document.getElementById('userInfo').style.display = 'none';
+            document.getElementById('loginPrompt').style.display = 'block';
+            document.getElementById('signInButton').style.display = 'block';
+            document.getElementById('nextButton').style.display = 'none';
+            authToken = '';
+            // Ensure orb is hidden
+            document.querySelector('.orb').style.display = 'none';
+            document.getElementById('googleSignIn').style.display = 'flex';
+            document.getElementById('voiceAssistant').style.display = 'none';
         });
-    }
+    });
+}
 
-    function displayUserInfo(data) {
-        console.log('Displaying user info:', data);
-        document.getElementById('userName').textContent = data.name;
-        document.getElementById('userEmail').textContent = data.email;
-        document.getElementById('userPicture').src = data.picture;
-        document.getElementById('userInfo').style.display = 'block';
-        document.getElementById('loginPrompt').style.display = 'none';
-        document.getElementById('signInButton').style.display = 'none';
-    }
+function checkLoginStatus() {
+    console.log('Checking login status');
+    chrome.storage.local.get('userInfo', (result) => {
+        if (result.userInfo) {
+            console.log('User info found in storage:', result.userInfo);
+            displayUserInfo(result.userInfo);
+            document.getElementById('phoneNumber').value = result.userInfo.phone || '';
+            document.getElementById('recEmail').value = result.userInfo.recemail || '';
+            document.getElementById('nextButton').style.display = 'block';
+        } else {
+            console.log('No user info found in storage');
+            document.getElementById('loginPrompt').style.display = 'block';
+            document.getElementById('signInButton').style.display = 'block';
+            document.getElementById('userInfo').style.display = 'none';
+            document.getElementById('nextButton').style.display = 'none';
+        }
+    });
+}
 
-
-    
+function displayUserInfo(data) {
+    console.log('Displaying user info:', data);
+    document.getElementById('userName').textContent = data.name;
+    document.getElementById('userEmail').textContent = data.email;
+    document.getElementById('userPicture').src = data.picture;
+    document.getElementById('userInfo').style.display = 'block';
+    document.getElementById('loginPrompt').style.display = 'none';
+    document.getElementById('signInButton').style.display = 'none';
+}
 
 function sendTextInput() {
     const inputText = document.getElementById('textInput').value;
@@ -331,6 +215,7 @@ function sendTextInput() {
     // Display user message
     displayMessage(inputText, 'user');
     
+    // Send the input text to the AI endpoint
     fetch('http://localhost:5000/text_input', {
         method: 'POST',
         headers: {
@@ -340,13 +225,11 @@ function sendTextInput() {
     })
     .then(response => response.json())
     .then(data => {
-        // Display bot response
+        // Display AI response
         displayMessage(data.response, 'bot');
         
-        const audio = document.getElementById('audio');
-        audio.src = 'http://localhost:5000/get_audio?' + new Date().getTime();
-        audio.style.display = 'block';
-        audio.play();
+        // Trigger TTS synthesis
+        socket.emit('synthesize', { text: data.response });
     })
     .catch(error => {
         console.error('Error:', error);
@@ -364,76 +247,50 @@ function displayMessage(message, sender) {
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
-// Add event listener for the new button
-document.getElementById('sendTextButton').addEventListener('click', sendTextInput);
+function startRecording() {
+    console.log('Start recording');
+    isRecording = true;
 
-// Optional: Send message on Enter key press
-document.getElementById('textInput').addEventListener('keydown', function(event) {
-    if (event.key === 'Enter') {
-        sendTextInput();
-    }
-});
+    const orb = document.querySelector('.orb');
+    orb.classList.add('floating');
 
-let isRecording = false;
+    fetch('http://localhost:5000/start_recording', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data.status);
+        });
+}
 
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'p' || event.key === 'P') {
-            if (!isRecording) {
-                startRecording();
-            }
-            else {
-                stopRecording();
-            }
-        }
-    });
-    
-    
-    
-    function startRecording() {
-        console.log('Start recording');
-        isRecording = true;
-    
-        const orb = document.querySelector('.orb');
-        orb.classList.add('floating');
-    
-        fetch('http://localhost:5000/start_recording', { method: 'POST' })
-            .then(response => response.json())
-            .then(data => {
-                console.log(data.status);
+function stopRecording() {
+    console.log('Stop recording');
+    isRecording = false;
+
+    const orb = document.querySelector('.orb');
+    orb.classList.remove('floating');
+
+    fetch('http://localhost:5000/stop_recording', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data.status);
+            // Fetch the audio response after stopping the recording
+            fetchAudioResponse();
+        });
+}
+
+function fetchAudioResponse() {
+    fetch('http://localhost:5000/talk', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('response').innerText = data.response;
+            
+            const audio = document.getElementById('audio');
+            audio.src = 'http://localhost:5000/get_audio?' + new Date().getTime();
+            audio.style.display = 'block';
+            audio.play().catch(error => {
+                console.error('Error playing audio:', error);
             });
-    }
-    
-    function stopRecording() {
-        console.log('Stop recording');
-        isRecording = false;
-    
-        const orb = document.querySelector('.orb');
-        orb.classList.remove('floating');
-    
-        fetch('http://localhost:5000/stop_recording', { method: 'POST' })
-            .then(response => response.json())
-            .then(data => {
-                console.log(data.status);
-                // Fetch the audio response after stopping the recording
-                
-                fetchAudioResponse();
-            });
-    }
-    
-    function fetchAudioResponse() {
-        fetch('http://localhost:5000/talk', { method: 'POST' })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('response').innerText = data.response;
-                
-                const audio = document.getElementById('audio');
-                audio.src = 'http://localhost:5000/get_audio?' + new Date().getTime();
-                audio.style.display = 'block';
-                audio.play();
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
-    }
-    
-});
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+}

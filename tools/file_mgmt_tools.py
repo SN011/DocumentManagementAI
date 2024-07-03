@@ -6,7 +6,7 @@ SCOPES = ['https://www.googleapis.com/auth/drive']
 
 class CreateFolderTool(BaseTool):
     name = "CreateFolderTool"
-    description = "Creates a new folder in Google Drive using OAuth 2.0 for secure user authentication. USED TO CREATE A SINGLE FOLDER."
+    description = "Creates a new folder in Google Drive using OAuth 2.0 for secure user authentication. USED TO CREATE A SINGLE FOLDER. IF PARENT_FOLDER_ID IS GIVEN, THE FOLDER WILL BE CREATED WITHIN THAT PARENT FOLDER."
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
 
     class Config:
@@ -62,7 +62,7 @@ class CreateFolderTool(BaseTool):
     def _run(self, folder_name: str, parent_folder_id: str = None, **kwargs):
         """Run the tool to create a folder in Google Drive."""
         if not parent_folder_id:
-            return f"Use the ImprovedSearchTool to find the parent folder ID for '{folder_name}' and pass it as an argument to this tool."
+            parent_folder_id = 'root'
 
         result = self.create_folder(folder_name, parent_folder_id)
         return result if result else "Failed to create folder."
@@ -141,7 +141,7 @@ SCOPES = ['https://www.googleapis.com/auth/drive']
 
 class FolderMovementTool(BaseTool):
     name = "FolderMovementTool"
-    description = "Manages folders in Google Drive using OAuth 2.0 for secure user authentication. Provides functionality to move folders and their contents, BASICALLY USE THIS TO MOVE A FOLDER INTO ANOTHER FOLDER."
+    description = "MOVES ONE FOLDER TO ANOTHER AS WELL AS ALL CONTENTS in Google Drive using OAuth 2.0 for secure user authentication. Provides functionality to move folders and their contents, BASICALLY USE THIS TO MOVE A FOLDER INTO ANOTHER FOLDER."
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
 
     class Config:
@@ -494,7 +494,7 @@ SCOPES = ['https://www.googleapis.com/auth/drive']
 
 class ImprovedSearchTool(BaseTool):
     name = "ImprovedSearchTool"
-    description = "Searches for files and folders in Google Drive using OAuth 2.0 for secure user authentication. Pass in the name AND/OR ID of the item requested. If multiple matches are found, it lists them and asks the user to select the correct one."
+    description = "RETRIEVES ALL GOOGLE DRIVE FILES AND FOLDERS AND SEARCHES FOR A MATCH, WHEN THE NAME OR ID OF THE ITEM IS INPUTTED. Pass in the name AND/OR ID of the item requested. If multiple matches are found, it lists them and asks the user to select the correct one."
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
 
     class Config:
@@ -656,9 +656,6 @@ class ImprovedSearchTool(BaseTool):
 
         if name:
             
-            
-            
-
             items = self.search_files_and_folders_in_batches(name)
             
             enumerated_items = self.list_matches_and_ask_user(items)

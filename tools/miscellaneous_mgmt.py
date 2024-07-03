@@ -149,8 +149,11 @@ class GmailSendPdfTool(BaseTool):
         
         if pdf_path:
             part = MIMEBase('application', 'octet-stream')
-            with open(pdf_path, 'rb') as file:
-                part.set_payload(file.read())
+            try:
+                with open(pdf_path, 'rb') as file:
+                    part.set_payload(file.read())
+            except: 
+                return "INVALID FILE PATH. WHATEVER YOU HAVE INPUTTED IS A WRONG PATH. PATH MEANS A FILE PATH ON THE LOCAL MACHINE/COMPUTER."
             encoders.encode_base64(part)
             part.add_header('Content-Disposition', f'attachment; filename="{os.path.basename(pdf_path)}"')
             message.attach(part)
@@ -164,12 +167,12 @@ class GmailSendPdfTool(BaseTool):
             return message
         except HttpError as error:
             print(f'An error occurred: {error}')
-            return None
+            return f'An error occurred: {error}'
 
     def _run(self, sender_email: str, recipient_email: str, subject: str, body: str, pdf_path: str = None, **kwargs):
         """Run the tool to send the email with the optional PDF attachment."""
         result = self.send_email(sender_email, recipient_email, subject, body, pdf_path)
-        return "Email sent successfully. YOU ARE DONNNNEEEEEEEEEEEEE!!!!!!!! TOOL EXECUTED SUCCESSFULLY!!!!!!!!!!!!!" if result else "Failed to send email."
+        return f"Email sent successfully with message ID {result["id"]}. YOU ARE DONNNNEEEEEEEEEEEEE!!!!!!!! TOOL EXECUTED SUCCESSFULLY!!!!!!!!!!!!!" if result else "Failed to send email."
 
     def _arun(self):
         raise NotImplementedError("This tool does not support asynchronous operation yet.")

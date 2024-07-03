@@ -31,6 +31,70 @@
             text-align: center;
             position: relative; /* Ensure absolute children are positioned relative to this container */
         }
+        .chat-window {
+            width: 100%;
+            height: 85%;
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #ccc;
+        }
+
+        .message {
+            margin: 10px;
+            padding: 10px;
+            border-radius: 20px;
+            width: fit-content;
+            max-width: 75%;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background-color: #ba4bdb; /* Light green background for user messages */
+        }
+
+        .message.bot {
+            align-self: flex-start;
+            background-color: #0a9790; /* Light grey background for bot messages */
+        }
+
+        .input-area {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #fff;
+            border-top: 1px solid #ccc;
+        }
+
+        .input-area input {
+            width: 80%;
+            padding: 10px;
+            border-radius: 20px;
+            border: 1px solid #ccc;
+            outline: none;
+            font-size: 16px;
+        }
+
+        .input-area button {
+            width: 15%;
+            padding: 10px;
+            background-color: #007bff;
+            border: none;
+            border-radius: 20px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 16px;
+            margin-left: 5px;
+        }
+
+        .input-area button:active {
+            background-color: #0056b3;
+        }
 
         .orb {
             width: 100px; /* Adjust width */
@@ -134,14 +198,18 @@
         </div>
     </div>
 
+    
     <div id="voiceAssistant" class="container">
-        <div class="orb"></div>
+        <div class="orb floating"></div>
         <div class="name-tag">Marvin</div>
-        <button id="talkButton">Talk to Marvin</button>
-        <div id="response"></div>
+        <div class="chat-window" id="chatWindow"></div>
+        <div class="input-area">
+            <input type="text" id="textInput" placeholder="Enter text here">
+            <button id="sendTextButton">Send</button>
+        </div>
         <audio id="audio" style="display:none;"></audio>
-        <button id="backButton">Back</button>
     </div>
+
 
     <script src="popup.js"></script>
 </body>

@@ -1,7 +1,7 @@
 from tools.imports import *
 import tools.initialize_groq
 from tools.auth import authenticate
-
+from tools.file_mgmt_tools import DriveDictUpdateTool
 client,_ = tools.initialize_groq.init_groq()
 
 DOCUMENT_IDS_FILE = "document_ids.txt"
@@ -259,7 +259,7 @@ class GoogleDocWriteTool(BaseTool):
         items = results.get('files', [])
         return items
     
-    def _run(self, input_text:str, append:bool=False, document_name:str=None,**kwargs):
+    def _run(self, input_text:str, append:bool=False, document_name:str=None, **kwargs):
         try:
             # Parse the input text
             processed_input = self.make_docmgr_write_to_file(str(input_text))
@@ -289,9 +289,10 @@ class GoogleDocWriteTool(BaseTool):
             self.write_to_google_doc(document_id, sections, append)
             print(f'Content written to document ID: {document_id}')  # Debug print
 
+            res = DriveDictUpdateTool(self.credentials_path).update_with_new_item(document_id)
             
             document_url = f'https://docs.google.com/document/d/{document_id}/edit'
-            print(f'Access the document at: {document_url}')
+            print(f'Access the document at: {document_url}, and {res}')
             return f"THE CONTENT HAS BEEN WRITTEN to the document called {document_name} with id = {document_id}. PLEASE STOP!!!!!!!! YOURE DONE!!!!!!!!! NO MORE!!!!"
         except HttpError as error:
             print(f'An error occurred: {error}')

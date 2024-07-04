@@ -18,6 +18,10 @@ socket.on('tts_complete', (data) => {
     });
 });
 
+socket.on('new_message', (data) => {
+    displayMessage(data.message, data.sender);
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded');
     checkLoginStatus();
@@ -149,10 +153,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.addEventListener('keydown', function(event) {
         if (event.key === 'p' || event.key === 'P') {
-            if (!isRecording) {
-                startRecording();
-            } else {
-                stopRecording();
+            const activeElement = document.activeElement;
+            if (activeElement && activeElement.id !== 'textInput') {
+                if (!isRecording) {
+                    startRecording();
+                } else {
+                    stopRecording();
+                }
             }
         }
     });
@@ -215,7 +222,6 @@ function sendTextInput() {
     // Display user message
     displayMessage(inputText, 'user');
     
-    // Send the input text to the AI endpoint
     fetch('http://localhost:5000/text_input', {
         method: 'POST',
         headers: {
@@ -225,11 +231,7 @@ function sendTextInput() {
     })
     .then(response => response.json())
     .then(data => {
-        // Display AI response
-        displayMessage(data.response, 'bot');
-        
-        // Trigger TTS synthesis
-        socket.emit('synthesize', { text: data.response });
+        console.log('Synthesis request sent:', data);
     })
     .catch(error => {
         console.error('Error:', error);

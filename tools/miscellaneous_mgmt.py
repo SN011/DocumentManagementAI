@@ -1,7 +1,7 @@
 from tools.imports import *
 from googleapiclient.http import MediaFileUpload
 from tools.auth import authenticate
-
+from tools.file_mgmt_tools import DriveDictUpdateTool
 
 class GoogleDriveUploadTool(BaseTool):
     name = "GoogleDriveUploadTool"
@@ -39,7 +39,7 @@ class GoogleDriveUploadTool(BaseTool):
             with open('file_id_history.txt', 'w') as id_hist_file:
                 id_hist_file.write(file_id)
             print(f"File ID: {file_id}")
-
+            res = DriveDictUpdateTool(self.credentials_path).update_with_new_item(file_id)
             # permission = {
             #     'type': 'user',
             #     'role': 'writer',

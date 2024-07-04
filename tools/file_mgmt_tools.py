@@ -54,15 +54,19 @@ class CreateFolderTool(BaseTool):
             print(f'Folder "{folder_name}" created with ID: {file.get("id")}')
             with open('folder_ids.txt', 'w') as f:
                 f.write(file.get('id'))
-            return f"HERE IS FOLDER'S ID {file.get('id')}"
+            res = DriveDictUpdateTool(self.credentials_path).update_with_new_item(file.get('id'))
+            return f"HERE IS FOLDER'S ID {file.get('id')} and {res}"
         except HttpError as error:
             print(f'An error occurred while creating folder: {error}')
             return None
 
-    def _run(self, folder_name: str, parent_folder_id: str = None, **kwargs):
+    def _run(self, folder_name: str, parent_folder_name:str = None, parent_folder_id: str = None, **kwargs):
         """Run the tool to create a folder in Google Drive."""
         if not parent_folder_id:
             parent_folder_id = 'root'
+        
+        if parent_folder_name:
+            return f"Use the ImprovedSearchTool to find the ID for '{parent_folder_name}' and pass it as an argument to this tool under 'parent_folder_id' parameter. Once you have the parent folder ID, call this tool again with the folder_name (which is the folder to be created), parent_folder_name (under which parent the folder should be created), and the parent_folder_id (ID of parent folder). Be sure to pass in ALL OF THE FOLLOWING: folder_name, parent_folder_name, parent_folder_id." 
 
         result = self.create_folder(folder_name, parent_folder_id)
         return result if result else "Failed to create folder."
@@ -363,6 +367,7 @@ class FileOrganizerTool(BaseTool):
             folder_name = folder_mapping.get(file['mimeType'], 'Others')
             folder_id = self.create_folder_if_not_exists(folder_name, parent_folder_id)
             if folder_id:
+                res = DriveDictUpdateTool(self.credentials_path).update_with_new_item(folder_id)
                 self.move_file_to_folder(file['id'], folder_id)
 
         return "Files organized successfully. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
@@ -642,9 +647,13 @@ class ImprovedSearchTool(BaseTool):
         return result_list
 
     def _run(self, name: str = None, id: str = None, **kwargs):
-        self.list_files_and_write()
+        
+        if not os.path.exists(self.output_dir):
+            self.list_files_and_write()
+        print('MAPPING FUNCTION IS RUNNING')
         for batch_file in os.listdir(self.output_dir):
             self.map_function(os.path.join(self.output_dir, batch_file), self.map_output_dir)
+        print('REDUCTION FUNCTION IS RUNNING')
         self.reduce_function(self.map_output_dir, self.reduce_output_dir)
         
         if id:
@@ -672,6 +681,155 @@ class ImprovedSearchTool(BaseTool):
 
         
         return "Please provide either a name or an ID."
+
+    def _arun(self):
+        raise NotImplementedError("This tool does not support asynchronous operation yet.")
+    
+
+import logging
+
+
+logger = logging.getLogger(__name__)
+
+class DriveDictUpdateTool(BaseTool):
+    name = "DriveDictUpdateTool"
+    description = "Lists all Google Drive files and writes them to JSON files in batches."
+    credentials_path: str = Field(..., description="Path to the credentials JSON file")
+
+    def __init__(self, credentials_path: str):
+        super().__init__()
+        self.credentials_path = credentials_path
+        self.creds = authenticate()
+        self.output_dir = 'drive_batches'
+        self.map_output_dir = 'mapped_batches'
+        self.reduce_output_dir = 'final_aggregated'
+        self.service = build('drive', 'v3', credentials=self.creds)
+
+    def list_files_and_write(self, batch_size=100):
+        """Lists all files in Google Drive and writes them in batches to JSON files."""
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+
+        page_token = None
+        batch_num = 0
+        file_count = 0
+        batch_data = []
+
+        while True:
+            try:
+                response = self.service.files().list(
+                    q="'me' in owners",
+                    spaces='drive',
+                    fields='nextPageToken, files(id, name, mimeType, createdTime, modifiedTime)',
+                    pageToken=page_token
+                ).execute()
+
+                items = response.get('files', [])
+                if not items:
+                    break
+
+                for item in items:
+                    batch_data.append(item)
+                    file_count += 1
+
+                    if file_count >= batch_size:
+                        batch_file = os.path.join(self.output_dir, f'batch_{batch_num}.json')
+                        with open(batch_file, 'w') as f:
+                            json.dump(batch_data, f, indent=4)
+
+                        batch_num += 1
+                        file_count = 0
+                        batch_data = []
+
+                page_token = response.get('nextPageToken', None)
+                if page_token is None:
+                    break
+            except HttpError as error:
+                logger.error(f'An error occurred during listing: {error}')
+                break
+
+        if batch_data:
+            batch_file = os.path.join(self.output_dir, f'batch_{batch_num}.json')
+            with open(batch_file, 'w') as f:
+                json.dump(batch_data, f, indent=4)
+
+    def map_function(self, batch_file, output_dir):
+        with open(batch_file, 'r') as f:
+            items = json.load(f)
+
+        mapped_data = defaultdict(list)
+        for item in items:
+            date_key = item['createdTime'][:10]
+            file_info = {
+                'id': item['id'],
+                'name': item['name'],
+                'type': item['mimeType'],
+                'created_time': item['createdTime'],
+                'modified_time': item['modifiedTime']
+            }
+            mapped_data[date_key].append(file_info)
+
+        for date, files in mapped_data.items():
+            output_file = os.path.join(output_dir, f'{date}.json')
+            with open(output_file, 'a') as f:
+                json.dump(files, f)
+                f.write("\n")
+
+    def reduce_function(self, input_dir, output_dir):
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        for map_file in os.listdir(input_dir):
+            if map_file.endswith('.json'):
+                aggregated_data = defaultdict(list)
+                with open(os.path.join(input_dir, map_file), 'r') as f:
+                    for line in f:
+                        batch_data = json.loads(line)
+                        for item in batch_data:
+                            aggregated_data[item['created_time'][:10]].append(item)
+
+                for date, files in aggregated_data.items():
+                    output_file = os.path.join(output_dir, f'final_{date}.json')
+                    with open(output_file, 'w') as f:
+                        json.dump(files, f, indent=4)
+
+    def get_file_or_folder_by_id(self, id: str):
+        """Retrieve a file or folder by its ID."""
+        try:
+            item = self.service.files().get(fileId=id, fields='id, name, mimeType, createdTime, modifiedTime').execute()
+            return item
+        except HttpError as error:
+            logger.error(f'An error occurred while retrieving the item: {error}')
+            return None
+
+    def update_with_new_item(self, id: str):
+        """Update the existing data with a new item using map-reduce by ID."""
+        item = self.get_file_or_folder_by_id(id)
+        if not item:
+            return f"Item with ID {id} not found or insufficient permissions."
+
+        date_key = item['createdTime'][:10]
+        file_info = {
+            'id': item['id'],
+            'name': item['name'],
+            'type': item['mimeType'],
+            'created_time': item['createdTime'],
+            'modified_time': item['modifiedTime']
+        }
+
+        # Map phase
+        map_file = os.path.join(self.map_output_dir, f'{date_key}.json')
+        with open(map_file, 'a') as f:
+            json.dump([file_info], f)
+            f.write("\n")
+
+        # Reduce phase
+        self.reduce_function(self.map_output_dir, self.reduce_output_dir)
+        return f"Item with ID {id} has been added and the data has been updated."
+
+    def _run(self, batch_size: int = 100):
+        self.list_files_and_write(batch_size=batch_size)
+        return f"Files have been listed and written to JSON files in batches of {batch_size}."
 
     def _arun(self):
         raise NotImplementedError("This tool does not support asynchronous operation yet.")

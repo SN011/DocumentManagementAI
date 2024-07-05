@@ -1,6 +1,7 @@
 let authToken = '';
 let isRecording = false;
 let isPlaying = false;
+let isHumanToolRequest = false;
 
 let socket = io('http://localhost:5000');
 
@@ -20,6 +21,20 @@ socket.on('tts_complete', (data) => {
 
 socket.on('new_message', (data) => {
     displayMessage(data.message, data.sender);
+});
+
+socket.on('request_human_input', () => {
+    console.log('Server is requesting human input');
+    document.getElementById('textInput').disabled = false;
+    document.getElementById('sendTextButton').disabled = false;
+    isHumanToolRequest = true;  // Mark that the next input is for the human tool
+});
+
+socket.on('finished_chain', () => {
+    console.log('Server is saying the agent exec chain is finished');
+    document.getElementById('textInput').disabled = false;
+    document.getElementById('sendTextButton').disabled = false;
+    isHumanToolRequest = false;  
 });
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -144,10 +159,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('.orb').style.display = 'none';
     });
 
-    document.getElementById('sendTextButton').addEventListener('click', sendTextInput);
+    document.getElementById('sendTextButton').addEventListener('click', handleTextInput);
     document.getElementById('textInput').addEventListener('keydown', function(event) {
         if (event.key === 'Enter') {
-            sendTextInput();
+            handleTextInput();
         }
     });
 
@@ -215,6 +230,14 @@ function displayUserInfo(data) {
     document.getElementById('signInButton').style.display = 'none';
 }
 
+function handleTextInput() {
+    if (isHumanToolRequest) {
+        sendHumanInput();
+    } else {
+        sendTextInput();
+    }
+}
+
 function sendTextInput() {
     const inputText = document.getElementById('textInput').value;
     if (!inputText.trim()) return;
@@ -238,6 +261,21 @@ function sendTextInput() {
     });
 
     document.getElementById('textInput').value = '';
+}
+
+function sendHumanInput() {
+    const inputText = document.getElementById('textInput').value;
+    if (!inputText.trim()) return;
+
+    // Display user message
+    displayMessage(inputText, 'user');
+
+    socket.emit('provide_human_input', { text: inputText });
+
+    document.getElementById('textInput').value = '';
+    document.getElementById('textInput').disabled = true;
+    document.getElementById('sendTextButton').disabled = true;
+    isHumanToolRequest = false;  // Reset the flag
 }
 
 function displayMessage(message, sender) {

@@ -62,14 +62,17 @@ class CreateFolderTool(BaseTool):
 
     def _run(self, folder_name: str, parent_folder_name:str = None, parent_folder_id: str = None, **kwargs):
         """Run the tool to create a folder in Google Drive."""
-        if not parent_folder_id:
-            parent_folder_id = 'root'
+        if parent_folder_id and parent_folder_id.lower() in ["root", "google drive", "my drive"]:
+            parent_folder_id = "root"
         
-        if parent_folder_name:
-            return f"Use the ImprovedSearchTool to find the ID for '{parent_folder_name}' and pass it as an argument to this tool under 'parent_folder_id' parameter. Once you have the parent folder ID, call this tool again with the folder_name (which is the folder to be created), parent_folder_name (under which parent the folder should be created), and the parent_folder_id (ID of parent folder). Be sure to pass in ALL OF THE FOLLOWING: folder_name, parent_folder_name, parent_folder_id." 
+        elif parent_folder_name and not parent_folder_id:
+            return f"Use the ImprovedSearchTool to find the ID for '{parent_folder_name}' and pass it as an argument to this tool under 'parent_folder_id' parameter. Be sure to pass in the parent_folder_name as well."
 
-        result = self.create_folder(folder_name, parent_folder_id)
-        return result if result else "Failed to create folder."
+        if folder_name and parent_folder_id:
+            result = self.create_folder(folder_name, parent_folder_id)
+            return result if result else "Failed to create folder."
+
+        return "Invalid input. Provide both folder_name and parent_folder_id or parent_folder_name."
 
     def _arun(self):
         raise NotImplementedError("This tool does not support asynchronous operation yet.")
@@ -395,108 +398,6 @@ class FileOrganizerTool(BaseTool):
 
 SCOPES = ['https://www.googleapis.com/auth/drive']
 
-class OldImprovedSearchTool(BaseTool):
-    name = "ImprovedSearchTool"
-    description = "Searches for files and folders in Google Drive using OAuth 2.0 for secure user authentication. If multiple matches are found, it lists them and asks the user to select the correct one."
-    credentials_path: str = Field(..., description="Path to the credentials JSON file")
-
-    class Config:
-        extra = Extra.allow
-
-    def __init__(self, credentials_path: str):
-        super().__init__()
-        self.credentials_path = credentials_path
-        self.creds = None
-        self.authenticate()
-
-    def authenticate(self):
-        
-        if not self.creds or not self.creds.valid:
-            if self.creds and self.creds.expired and self.creds.refresh_token:
-                self.creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
-                self.creds = flow.run_local_server(port=0)
-        self.service = build('drive', 'v3', credentials=self.creds)
-
-    def get_file_or_folder_by_id(self, id: str):
-        """Retrieve a file or folder by its ID."""
-        try:
-            item = self.service.files().get(fileId=id, fields='id, name, mimeType').execute()
-            return item
-        except HttpError as error:
-            return(f'An error occurred while retrieving the item: {error}')
-            
-        
-    def search_files_and_folders(self, name: str):
-        """Search for files and folders by name in Google Drive with pagination."""
-        items = []
-        page_token = None
-
-        while True:
-            try:
-                query = f"name contains '{name}' and trashed = false"
-                results = self.service.files().list(
-                    q=query,
-                    fields="nextPageToken, files(id, name, mimeType, createdTime, modifiedTime)",
-                    pageToken=page_token
-                ).execute()
-                items.extend(results.get('files', []))
-                page_token = results.get('nextPageToken')
-                if not page_token:
-                    break
-            except HttpError as error:
-                print(f'An error occurred during search: {error}. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!')
-                break
-
-        return items
-
-    def list_matches_and_ask_user(self, items):
-        """List all matches and ask the user to select the correct one."""
-        if not items:
-            return None
-
-        if len(items) == 1:
-            return [f"{1}: {items[0]['name']} (ID: {items[0]['id']}, Type: {items[0]['mimeType']}, CreatedTime: {items[0]['createdTime']}, ModifiedTime: {items[0]['modifiedTime']})"]
-
-        
-        result_list = []
-        for index, item in enumerate(items):
-            result_list.append(f"{index + 1}: {item['name']} (ID: {item['id']}, Type: {item['mimeType']}, CreatedTime: {items['createdTime']}, ModifiedTime: {items['modifiedTime']})")
-
-        return result_list
-
-    def _run(self, name: str = None, id: str = None, **kwargs):
-        """Run the tool to search for files and folders by name and ask the user to select the correct one if multiple matches are found."""
-        if id:
-            item = self.get_file_or_folder_by_id(id)
-            if item:
-                return f"Retrieved item: {item['name']} (ID: {item['id']}, Type: {item['mimeType']}, CreatedTime: {items['createdTime']}, ModifiedTime: {items['modifiedTime']})."
-            else:
-                return "Item not found or insufficient permissions. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
-
-        if name:
-            items = self.search_files_and_folders(name)
-            enumerated_items = self.list_matches_and_ask_user(items)
-
-            if not enumerated_items:
-                return f"Item with name {name} was not found. Please try creating the item or any other action you deem fit."
-
-            if len(enumerated_items) > 1:
-                return "Multiple matches found:\n" + "\n".join(enumerated_items) + "\nPlease ASK THE HUMAN TO specify the number of the correct item."
-            elif len(enumerated_items) == 1:
-                return "SINGLE MATCH FOUND:\n" + "".join(enumerated_items) + "\nPLEASE PROCEED WITH THIS INFORMATION."
-            else:
-                return "No matches found. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
-        
-        return "Please provide either a name or an ID. PLEASE STOPPPPPPPPP!!!!!!!!!! RIGHT NOW!!!!!! YOU ARE DONE!!!!!!!! STOP!!!!!!!!"
-
-
-    def _arun(self):
-        raise NotImplementedError("This tool does not support asynchronous operation yet.")
-
-SCOPES = ['https://www.googleapis.com/auth/drive']
-
 class ImprovedSearchTool(BaseTool):
     name = "ImprovedSearchTool"
     description = "RETRIEVES ALL GOOGLE DRIVE FILES AND FOLDERS AND SEARCHES FOR A MATCH, WHEN THE NAME OR ID OF THE ITEM IS INPUTTED. Pass in the name AND/OR ID of the item requested. If multiple matches are found, it lists them and asks the user to select the correct one."
@@ -650,16 +551,22 @@ class ImprovedSearchTool(BaseTool):
         
         if not os.path.exists(self.output_dir):
             self.list_files_and_write()
-        print('MAPPING FUNCTION IS RUNNING')
-        for batch_file in os.listdir(self.output_dir):
-            self.map_function(os.path.join(self.output_dir, batch_file), self.map_output_dir)
-        print('REDUCTION FUNCTION IS RUNNING')
-        self.reduce_function(self.map_output_dir, self.reduce_output_dir)
+            print('MAPPING FUNCTION IS RUNNING')
+            for batch_file in os.listdir(self.output_dir):
+                self.map_function(os.path.join(self.output_dir, batch_file), self.map_output_dir)
+            print('REDUCTION FUNCTION IS RUNNING')
+            self.reduce_function(self.map_output_dir, self.reduce_output_dir)
         
+        if name and name.lower() in ["root", "google drive", "my drive"]:
+            return f"Do not use this tool with any parameter value of {name}. STOP USING THIS TOOL NOW!!!"
+        if id and id.lower() in ["root", "google drive", "my drive"]:
+            return f"Do not use this tool with any parameter value of {id}. STOP USING THIS TOOL NOW!!!"
+
+
         if id:
             item = self.get_file_or_folder_by_id(id)
             if item:
-                return f"Retrieved item: {item['name']} (ID: {item['id']}, Type: {item['mimeType']}, CreatedTime: {item['createdTime'][:10]}, ModifiedTime: {item['modifiedTime'][:10]}). YOU HAVE RETRIEVED THE ITEM!!!!!!!!!!!"
+                return f"Retrieved item: {item['name']} (ID: {item['id']}, Type: {item['mimeType']}, CreatedTime: {item['createdTime'][:10]}, ModifiedTime: {item['modifiedTime'][:10]}). YOU HAVE RETRIEVED THE ITEM!!!!!!!!!!! PLEASE DONT DO ANYTHING ELSE!!!!!!! YOU MUST TELL THE USER THIS INFORMATION VIA HUMAN TOOL!!!"
             else:
                 return "Item not found or insufficient permissions."
 
@@ -673,9 +580,9 @@ class ImprovedSearchTool(BaseTool):
                 return f"Item with name {name} was not found. Please try creating the item or take any other action you deem fit (like asking human for correction)."
 
             if len(enumerated_items) > 1:
-                return "Multiple matches found:\n" + "\n".join(enumerated_items) + "\nASK THIS TO THE HUMAN: Please specify the number of the correct item. THEN PASS IN ID OF THE SELECTED ITEM INTO THIS SAME TOOL INTO THE 'id' PARAMETER!!!!!!"
+                return "Multiple matches found:\n" + "\n".join(enumerated_items) + "\nPlease ASK THE HUMAN TO specify the number of the correct item. AND TELL THE USER THIS INFORMATION WORD FOR WORD. DO NOT DO ANYTHING ELSE UNTIL A NUMBER IS ENTERED BY THE HUMAN. THEN PASS IN ID OF THE SELECTED ITEM INTO THIS SAME TOOL INTO THE 'id' PARAMETER!!!!!!"
             elif len(enumerated_items) == 1:
-                return "SINGLE MATCH FOUND:\n" + "".join(enumerated_items) + "\nPLEASE PROCEED WITH THIS INFORMATION."
+                return "SINGLE MATCH FOUND:\n" + "".join(enumerated_items) + "\nPLEASE PROCEED WITH THIS INFORMATION. AND TELL THE USER THIS INFORMATION WORD FOR WORD. DO NOT DO ANYTHING ELSE UNTIL INDICATED BY HUMAN!"
             else:
                 return "No matches found."
 
@@ -685,6 +592,7 @@ class ImprovedSearchTool(BaseTool):
     def _arun(self):
         raise NotImplementedError("This tool does not support asynchronous operation yet.")
     
+
 
 import logging
 
@@ -696,6 +604,9 @@ class DriveDictUpdateTool(BaseTool):
     description = "Lists all Google Drive files and writes them to JSON files in batches."
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
 
+    class Config:
+        extra = Extra.allow
+        
     def __init__(self, credentials_path: str):
         super().__init__()
         self.credentials_path = credentials_path

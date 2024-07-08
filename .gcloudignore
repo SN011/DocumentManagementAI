@@ -1,0 +1,33 @@
+# .gcloudignore
+# This file specifies files that are *not* uploaded to Google Cloud Platform when deploying
+# your app with 'gcloud app deploy'.
+
+# Include the .env file to ensure environment variables are available
+!.env
+
+# Include the Dockerfile for custom image builds
+!Dockerfile
+!.dockerignore
+
+# Exclude virtual environments
+.venv/
+
+# Exclude git history and configuration
+.git/
+.gitignore
+
+# Exclude other unnecessary files and directories
+*.pyc
+__pycache__/
+node_modules/
+documents/
+drive_batches/
+final_aggregated/
+mapped_batches/
+static/
+templates/
+test-chrome-ext/
+!testing_folder/
+!paths/
+!requirements.txt
+tools/

@@ -1,0 +1,31 @@
+runtime: custom
+env: flex
+
+entrypoint: python3 testing_folder/twiliotest.py
+
+handlers:
+- url: /.*
+  script: auto
+
+# Optional: environment variables
+env_variables:
+  SERVICE_ACCOUNT_PATH: "paths/realestateai-doc-mgr-3a0e2f411c8d.json"
+  CREDENTIALS_PATH: "paths/client_secret_291175256673-gr5p5vf3pi2h0m46h5qnd3ila4iitfqs.apps.googleusercontent.com.json"
+  AUDIO_PATH: "paths/output.wav"
+  TTS_SYNTHESIS: "paths/synthesis.mp3"
+  TWILIO_ACCOUNT_SID: 'ACfbd0b087e41fd42be2593fafbf8cc56f'
+  TWILIO_AUTH_TOKEN: 'b1009be1aed2f34db2b8167050e74b4a'
+  TWILIO_PHONE_NUMBER: '+18559601391'
+  #LOCALTUNNEL_URL: 'https://fast-waves-pump.loca.lt'
+
+
+
+instance_class: F2
+
+# Optional: network settings
+network:
+  forwarded_ports:
+    - 5000
+
+resources:
+  disk_size_gb: 30

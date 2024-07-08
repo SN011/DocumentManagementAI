@@ -1,0 +1,15 @@
+.venv
+__pycache__
+*.pyc
+
+*.crx
+final_aggregated
+drive_batches
+leetcode
+mapped_batches
+paths
+static
+templates
+test-chrome-ext
+
+

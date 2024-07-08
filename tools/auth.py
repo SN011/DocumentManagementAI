@@ -18,26 +18,26 @@ TOKEN_PATH = 'paths/token.json'
 
 def authenticate():
     creds = None
-    # Debugging: Ensure paths are correct
-    
 
     # Load existing credentials from the token file
     if os.path.exists(TOKEN_PATH):
-        
         creds = Credentials.from_authorized_user_file(TOKEN_PATH, SCOPES)
-    
+
     # If there are no valid credentials, initiate the OAuth flow
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            
-            creds.refresh(Request())
-        else:
-            
+            try:
+                creds.refresh(Request())
+            except Exception as e:
+                print(f"Failed to refresh token: {e}")
+                os.remove(TOKEN_PATH)  # Delete the token file if refresh fails
+                creds = None  # Set creds to None to initiate a new OAuth flow
+        if not creds:
             flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_PATH, SCOPES)
             creds = flow.run_local_server(port=0)
             with open(TOKEN_PATH, 'w') as token_file:
                 token_file.write(creds.to_json())
-    
+
     return creds
 
 # Ensure no default credentials are being used

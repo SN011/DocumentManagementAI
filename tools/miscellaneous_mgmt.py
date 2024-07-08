@@ -71,24 +71,18 @@ class GoogleDriveUploadTool(BaseTool):
         raise NotImplementedError("This tool does not support asynchronous operation yet.")
 
 
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-
 class GoogleSheetsUpdateTool(BaseTool):
     name = "GoogleSheetsUpdateTool"
-    description = ("Appends three columns - name, phone number, and a URL LINK or LINKS - to a preexisting logging google sheet. STOP AFTER ONE-TIME SUCCESSFUL EXECUTION")
+    description = ("Appends rows to a specified range in a Google Sheets spreadsheet.")
 
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
-    spreadsheet_id: str = Field(default="1TSFyiTwctC1tABr2RQouBzLRMCG4RZ7lXdTVi-I58Mo", description="Google Sheets spreadsheet ID")
-    range_name: str = Field(default="Sheet1", description="Range in the spreadsheet to append data to")
 
     class Config:
         extra = Extra.allow
 
-    def __init__(self, credentials_path: str, spreadsheet_id: str = "1TSFyiTwctC1tABr2RQouBzLRMCG4RZ7lXdTVi-I58Mo", range_name: str = 'Sheet1'):
+    def __init__(self, credentials_path: str):
         super().__init__()
         self.credentials_path = credentials_path
-        self.spreadsheet_id = spreadsheet_id
-        self.range_name = range_name
         self.creds = authenticate()
         self.service = build('sheets', 'v4', credentials=self.creds)
 
@@ -97,30 +91,85 @@ class GoogleSheetsUpdateTool(BaseTool):
             content = file.read().strip()
         return content
 
-    def append_row_to_google_sheets(self, values):
-        """Appends a row to the specified range in the Google Sheets spreadsheet."""
-        
+    def append_row_to_google_sheets(self, spreadsheet_id, range_name, values):
+        """Appends rows to the specified range in the Google Sheets spreadsheet."""
         sheet = self.service.spreadsheets()
         body = {'values': values}
         result = sheet.values().append(
-            spreadsheetId=self.spreadsheet_id, range=self.range_name,
+            spreadsheetId=spreadsheet_id, range=range_name,
             valueInputOption="RAW", body=body,
             insertDataOption="INSERT_ROWS"
         ).execute()
         print(f"{result.get('updates').get('updatedCells')} cells appended.")
 
-    def _run(self, name: str, phone_number: str, linkstr: str = None, otherlinkstr:str=None,**kwargs):
-        """Run the tool to append the row with the given name, phone number, and link to the PDF."""
-        fileID = self.read_file_content('file_id_history.txt')
-        print(f"Extracted file ID: {fileID}")
-        link = f"https://drive.google.com/file/d/{fileID}/view"
-        values = [[name, phone_number, linkstr or link, otherlinkstr]]
-        self.append_row_to_google_sheets(values)
-        return "Row appended successfully. YOU ARE DONNNNEEEEEEEEEEEEE!!!!!!!! TOOL EXECUTED SUCCESSFULLY!!!!!!!!!!!!!"
+    def _run(self, spreadsheet_name: str = None, spreadsheet_id: str = None, values: list = None, range_name: str = 'Sheet1', **kwargs):
+        """Run the tool to append rows with the provided values to the specified range."""
+        if not spreadsheet_id:
+            return f"Use ImprovedSearchTool to find ID for the file (spreadsheet) by name {spreadsheet_name}, and pass it as an argument to this tool under 'spreadsheet_id' parameter. Be sure to pass in the spreadsheet_name as well."
+        else:
+            self.append_row_to_google_sheets(spreadsheet_id, range_name, values)
+        return "Rows appended successfully. YOU ARE DONE APPENDING ROWS TO THE SHEET!! THE TOOL HAS EXECUTED SUCCESSFULLY!!!!!!!"
 
-    def _arun(self, name: str, phone_number: str):
+    def _arun(self, spreadsheet_id: str, values: list, range_name: str = 'Sheet1'):
         raise NotImplementedError("This tool does not support asynchronous operation yet.")
     
+    
+SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+
+class GoogleSheetsCreateTool(BaseTool):
+    name = "GoogleSheetsCreateTool"
+    description = ("Creates a new Google Sheets spreadsheet with specified column headers.")
+
+    credentials_path: str = Field(..., description="Path to the credentials JSON file")
+
+    class Config:
+        extra = Extra.allow
+        
+    def __init__(self, credentials_path: str):
+        super().__init__()
+        self.credentials_path = credentials_path
+        self.creds = authenticate()
+        self.service = build('sheets', 'v4', credentials=self.creds)
+
+    def create_google_sheet(self, title, headers):
+        """Creates a new Google Sheets spreadsheet with the specified title and headers."""
+        
+        sheet = self.service.spreadsheets()
+        spreadsheet = {
+            'properties': {
+                'title': title
+            },
+            'sheets': [
+                {
+                    'data': [
+                        {
+                            'startRow': 0,
+                            'startColumn': 0,
+                            'rowData': [
+                                {
+                                    'values': [{'userEnteredValue': {'stringValue': header}} for header in headers]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+        result = sheet.create(body=spreadsheet).execute()
+        spreadsheet_id = result.get('spreadsheetId')
+        print(f"Spreadsheet ID: {spreadsheet_id}")
+        return spreadsheet_id
+
+    def _run(self, title: str, headers: list):
+        """Run the tool to create a new Google Sheet with the specified title and headers."""
+        spreadsheet_id = self.create_google_sheet(title, headers)
+        res = DriveDictUpdateTool(self.credentials_path).update_with_new_item(spreadsheet_id)
+        return f"Spreadsheet created successfully with ID: {spreadsheet_id}. THE TOOL EXECUTED SUCCESSFULLY!!!!!!"
+
+    def _arun(self, title: str, headers: list):
+        raise NotImplementedError("This tool does not support asynchronous operation yet.")
+
+
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']
 
 class GmailSendPdfTool(BaseTool):

@@ -558,9 +558,9 @@ class ImprovedSearchTool(BaseTool):
             self.reduce_function(self.map_output_dir, self.reduce_output_dir)
         
         if name and name.lower() in ["root", "google drive", "my drive"]:
-            return f"Do not use this tool with any parameter value of {name}. STOP USING THIS TOOL NOW!!!"
+            return f"Do not use this tool with any parameter value of {name} or anything similar to {name}. STOP USING THIS TOOL NOW!!!"
         if id and id.lower() in ["root", "google drive", "my drive"]:
-            return f"Do not use this tool with any parameter value of {id}. STOP USING THIS TOOL NOW!!!"
+            return f"Do not use this tool with any parameter value of {id} or anything similar to {id}. STOP USING THIS TOOL NOW!!!"
 
 
         if id:
@@ -743,4 +743,43 @@ class DriveDictUpdateTool(BaseTool):
         return f"Files have been listed and written to JSON files in batches of {batch_size}."
 
     def _arun(self):
+        raise NotImplementedError("This tool does not support asynchronous operation yet.")
+
+class GoogleDriveRenameTool(BaseTool):
+    name = "GoogleDriveRenameTool"
+    description = ("Renames a file in Google Drive, given the old file name.")
+
+    credentials_path: str = Field(..., description="Path to the credentials JSON file")
+
+    class Config:
+        extra = Extra.allow
+
+    def __init__(self, credentials_path: str):
+        super().__init__()
+        self.credentials_path = credentials_path
+        self.creds = authenticate()
+        self.service = build('drive', 'v3', credentials=self.creds)
+        self.update_tool = DriveDictUpdateTool(credentials_path)
+
+    def rename_file(self, file_id, new_name):
+        """Renames a file in Google Drive."""
+        file = {'name': new_name}
+        updated_file = self.service.files().update(
+            fileId=file_id,
+            body=file,
+            fields='id, name'
+        ).execute()
+        print(f"File renamed to {updated_file['name']}")
+        return updated_file
+
+    def _run(self, file_name: str, file_id: str, new_name: str, **kwargs):
+        """Run the tool to rename a file with the given file ID to the new name."""
+        if file_name and not file_id:
+            return f"Use ImprovedSearch tool to get the ID of the file with file_name = {file_name} and pass in both the file_id and file_name. FOLLOW ALL THE DIRECTIONS GIVEN."
+        
+        updated_file = self.rename_file(file_id, new_name)
+        self.update_tool.update_with_new_item(file_id)
+        return f"File renamed successfully to {updated_file['name']}. THE RENAME TOOL HAS EXECUTED SUCCESSFULLY! STOP!"
+
+    def _arun(self, file_id: str, new_name: str):
         raise NotImplementedError("This tool does not support asynchronous operation yet.")

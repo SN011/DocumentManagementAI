@@ -115,7 +115,7 @@ class GoogleSheetsUpdateTool(BaseTool):
     
     
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-
+from tools.file_mgmt_tools import ImprovedSearchTool
 class GoogleSheetsCreateTool(BaseTool):
     name = "GoogleSheetsCreateTool"
     description = ("Creates a new Google Sheets spreadsheet with specified column headers.")
@@ -130,9 +130,11 @@ class GoogleSheetsCreateTool(BaseTool):
         self.credentials_path = credentials_path
         self.creds = authenticate()
         self.service = build('sheets', 'v4', credentials=self.creds)
+        self.IST = ImprovedSearchTool(credentials_path=self.credentials_path)
 
     def create_google_sheet(self, title, headers):
         """Creates a new Google Sheets spreadsheet with the specified title and headers."""
+        
         
         sheet = self.service.spreadsheets()
         spreadsheet = {
@@ -160,11 +162,17 @@ class GoogleSheetsCreateTool(BaseTool):
         print(f"Spreadsheet ID: {spreadsheet_id}")
         return spreadsheet_id
 
-    def _run(self, title: str, headers: list):
+  
+    
+    def _run(self, title: str, headers: list, **kwargs):
         """Run the tool to create a new Google Sheet with the specified title and headers."""
+        
+        result = self.IST._run(name=title)
+        if 'single' in result.lower() or 'multiple' in result.lower():
+            return result
         spreadsheet_id = self.create_google_sheet(title, headers)
         res = DriveDictUpdateTool(self.credentials_path).update_with_new_item(spreadsheet_id)
-        return f"Spreadsheet created successfully with ID: {spreadsheet_id}. THE TOOL EXECUTED SUCCESSFULLY!!!!!!"
+        return f"Spreadsheet created successfully with ID: {spreadsheet_id}. IF PREVIOUSLY INSTRUCTED TO POPULATE DATA, USE GOOGLE SHEETS UPDATE TOOL!! THIS TOOL (GOOGLE SHEETS CREATE TOOL) DOES NOT TAKE ANY VALUES. IT ONLY INPUTS THE HEADERS INTO THE SHEET!!!!"
 
     def _arun(self, title: str, headers: list):
         raise NotImplementedError("This tool does not support asynchronous operation yet.")

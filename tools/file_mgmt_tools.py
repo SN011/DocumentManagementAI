@@ -601,12 +601,12 @@ logger = logging.getLogger(__name__)
 
 class DriveDictUpdateTool(BaseTool):
     name = "DriveDictUpdateTool"
-    description = "Lists all Google Drive files and writes them to JSON files in batches."
+    description = "Updates the dictionary of Google Drive files and writes them to JSON files in batches."
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
-
+ 
     class Config:
         extra = Extra.allow
-        
+
     def __init__(self, credentials_path: str):
         super().__init__()
         self.credentials_path = credentials_path
@@ -629,7 +629,7 @@ class DriveDictUpdateTool(BaseTool):
         while True:
             try:
                 response = self.service.files().list(
-                    q="'me' in owners",
+                    q="'me' in owners and trashed=false",
                     spaces='drive',
                     fields='nextPageToken, files(id, name, mimeType, createdTime, modifiedTime)',
                     pageToken=page_token
@@ -690,24 +690,24 @@ class DriveDictUpdateTool(BaseTool):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
+        aggregated_data = defaultdict(list)
         for map_file in os.listdir(input_dir):
             if map_file.endswith('.json'):
-                aggregated_data = defaultdict(list)
                 with open(os.path.join(input_dir, map_file), 'r') as f:
                     for line in f:
                         batch_data = json.loads(line)
                         for item in batch_data:
                             aggregated_data[item['created_time'][:10]].append(item)
 
-                for date, files in aggregated_data.items():
-                    output_file = os.path.join(output_dir, f'final_{date}.json')
-                    with open(output_file, 'w') as f:
-                        json.dump(files, f, indent=4)
+        for date, files in aggregated_data.items():
+            output_file = os.path.join(output_dir, f'final_{date}.json')
+            with open(output_file, 'w') as f:
+                json.dump(files, f, indent=4)
 
     def get_file_or_folder_by_id(self, id: str):
         """Retrieve a file or folder by its ID."""
         try:
-            item = self.service.files().get(fileId=id, fields='id, name, mimeType, createdTime, modifiedTime').execute()
+            item = self.service.files().get(fileId=id, fields='id, name, mimeType, createdTime, modifiedTime, trashed').execute()
             return item
         except HttpError as error:
             logger.error(f'An error occurred while retrieving the item: {error}')
@@ -718,6 +718,9 @@ class DriveDictUpdateTool(BaseTool):
         item = self.get_file_or_folder_by_id(id)
         if not item:
             return f"Item with ID {id} not found or insufficient permissions."
+
+        if item.get('trashed'):
+            return self.handle_deletion(id)
 
         date_key = item['createdTime'][:10]
         file_info = {
@@ -738,13 +741,27 @@ class DriveDictUpdateTool(BaseTool):
         self.reduce_function(self.map_output_dir, self.reduce_output_dir)
         return f"Item with ID {id} has been added and the data has been updated."
 
+    def handle_deletion(self, id: str):
+        """Handles deletion of a file."""
+        # Find and remove the file from the map_output_dir and reduce_output_dir
+        for output_dir in [self.map_output_dir, self.reduce_output_dir]:
+            for file_name in os.listdir(output_dir):
+                file_path = os.path.join(output_dir, file_name)
+                if file_name.endswith('.json'):
+                    with open(file_path, 'r') as f:
+                        data = json.load(f)
+                    new_data = [item for item in data if item['id'] != id]
+                    with open(file_path, 'w') as f:
+                        json.dump(new_data, f, indent=4)
+        return f"Item with ID {id} has been deleted from the data. TELL THE HUMAN THIS INFORMATION AND WAIT FOR HUMAN INPUT!!!"
+
     def _run(self, batch_size: int = 100):
         self.list_files_and_write(batch_size=batch_size)
         return f"Files have been listed and written to JSON files in batches of {batch_size}."
 
     def _arun(self):
         raise NotImplementedError("This tool does not support asynchronous operation yet.")
-
+    
 class GoogleDriveRenameTool(BaseTool):
     name = "GoogleDriveRenameTool"
     description = ("Renames a file in Google Drive, given the old file name.")

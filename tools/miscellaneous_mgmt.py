@@ -167,9 +167,9 @@ class GoogleSheetsCreateTool(BaseTool):
     def _run(self, title: str, headers: list, **kwargs):
         """Run the tool to create a new Google Sheet with the specified title and headers."""
         
-        result = self.IST._run(name=title)
-        if 'single' in result.lower() or 'multiple' in result.lower():
-            return result
+        # result = self.IST._run(name=title)
+        # if 'single' in result.lower() or 'multiple' in result.lower():
+        #     return result
         spreadsheet_id = self.create_google_sheet(title, headers)
         res = DriveDictUpdateTool(self.credentials_path).update_with_new_item(spreadsheet_id)
         return f"Spreadsheet created successfully with ID: {spreadsheet_id}. IF PREVIOUSLY INSTRUCTED TO POPULATE DATA, USE GOOGLE SHEETS UPDATE TOOL!! THIS TOOL (GOOGLE SHEETS CREATE TOOL) DOES NOT TAKE ANY VALUES. IT ONLY INPUTS THE HEADERS INTO THE SHEET!!!!"

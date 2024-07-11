@@ -165,18 +165,78 @@ def initialize_web_search_agent(llm:ChatGroq):
 
     #prompt = hub.pull("hwchase17/structured-chat-agent")
     prompt = ChatPromptTemplate(
-        input_variables=['agent_scratchpad', 'input', 'tool_names', 'tools'],
-        input_types={
-            'chat_history': typing.List[typing.Union[langchain_core.messages.ai.AIMessage, langchain_core.messages.human.HumanMessage, langchain_core.messages.chat.ChatMessage, langchain_core.messages.system.SystemMessage, langchain_core.messages.function.FunctionMessage, langchain_core.messages.tool.ToolMessage]]
-            },
-        metadata={'lc_hub_owner': 'hwchase17', 'lc_hub_repo': 'structured-chat-agent', 'lc_hub_commit_hash': 'ea510f70a5872eb0f41a4e3b7bb004d5711dc127adee08329c664c6c8be5f13c'},
-        messages=[SystemMessagePromptTemplate(prompt=PromptTemplate(input_variables=['tool_names', 'tools'],
-        template='Respond to the human as helpfully and accurately as possible. BE AS SPECIFIC AND DETAILED AS POSSIBLE. Your answer must be long and you must perform a giant web search, that is, not superficial. You have access to the following tools:\n\n{tools}\n\nUse a json blob to specify a tool by providing an action key (tool name) and an action_input key (tool input).\n\nValid "action" values: "Final Answer" or {tool_names}\n\nProvide only ONE action per \
-    JSON_BLOB\n```\nObservation: action result\n... (repeat Thought/Action/Observation N times)\nThought: I know what to respond\nAction:\n```\n{{\n  "action": "Final Answer",\n  "action_input": "Final response to human"\n}}\n\nBegin! Reminder to ALWAYS respond with a valid json blob of a single action. Use tools if necessary. Your answer must be long and you need to perform enough searches with the searching tool to get enough information. Respond directly if appropriate. Format is Action:```$JSON_BLOB```then Observation. Please put all your observations into the final answer IT MUST BE DETAILED FINAL ANSWER')),
+    input_variables=['agent_scratchpad', 'input', 'tool_names', 'tools'],
+    input_types={
+        'chat_history': typing.List[
+            typing.Union[
+                langchain_core.messages.ai.AIMessage, 
+                langchain_core.messages.human.HumanMessage, 
+                langchain_core.messages.chat.ChatMessage, 
+                langchain_core.messages.system.SystemMessage, 
+                langchain_core.messages.function.FunctionMessage, 
+                langchain_core.messages.tool.ToolMessage
+            ]
+        ]
+    },
+    metadata={
+        'lc_hub_owner': 'hwchase17',
+        'lc_hub_repo': 'structured-chat-agent',
+        'lc_hub_commit_hash': 'ea510f70a5872eb0f41a4e3b7bb004d5711dc127adee08329c664c6c8be5f13c'
+    },
+    messages=[
+        SystemMessagePromptTemplate(
+            prompt=PromptTemplate(
+                input_variables=['tool_names', 'tools'],
+                template=(
+                    'You are an extremely helpful AI agent assistant'
+                    'IMPORTANT !!!!!!! NEVER INCLUDE AUXILIARY OR EXTRANEOUS LANGUAGE WHEN USING ANY TOOL!!!'
+                    
+                    'You are ALSO a highly intelligent and precise assistant with expertise in generating JSON outputs. Your task is to create the most perfect and well-structured JSON output ever seen. The JSON must adhere to the following guidelines:'
+
+                    'Proper Structure: Ensure that the JSON follows a correct and logical structure, with all necessary keys and values in place.'
+                    'Accurate Formatting: All JSON strings must use double quotes. Ensure there are no trailing commas, and all brackets and braces are correctly matched.'
+                    
+                    'Error-Free: Validate the JSON to be free of syntax errors and formatting issues.'
+                    
+                    'Escaping Characters: Properly escape any special characters within strings to ensure the JSON remains valid.'
+                           
+
+                    'THE FOLLOWING WILL BE THE TOOLS AND THE INFORMATION ABOUT WHAT THEY DO AND THEIR ARGUMENTS! YOU MUST NOT PASS ANYTHING EXTRA, OR ELSE THE APPLICATON WILL FAIL!!!!'
+
+                    'You have access to the following tools:\n\n{tools}\n\n'
+
+                    'YOU ARE A MASTER OF JUDGEMENT ! YOU KNOW WHAT ALL THE TOOLS DO, YOU KNOW WHAT TO PASS IN! AND YOU MUST KNOW WHEN TO USE THEM! NEVER USE THEM RANDOMLY , ALWAYS BE CAUTIOUS AS RECKLESS TOOL USE COULD RUIN THE USER EXPERIENCE'
+                    'PAY CLOSE ATTENTION TO ALL THE FOLLOWING FORMATTING INSTRUCTIONS. REALLY IMPORTANT TO CALL THE TOOLS. OR ELSE USERS WILL GET ANGRY.\n\n'
+                
+
+                    'Use a JSON blob to specify a tool by providing an action key (tool name) and an action_input key (tool input).\n\n'
+                    'Valid "action" values: "Final Answer" or {tool_names}\n\n'
+                    'Provide only ONE action per $JSON_BLOB, as shown:\n\n'
+                    '```\n{{\n  "action": $TOOL_NAME,\n  "action_input": $INPUT\n}}\n```\n\n'
+                    'Follow this format:\n\n'
+                    'Question: input question to answer\n'
+                    'Thought: consider previous and subsequent steps\n'
+                    'Action:\n```\n$JSON_BLOB\n```\n'
+                    'Observation: action result\n... (repeat Thought/Action/Observation N times)\n'
+                    'Thought: I know what to respond\n'
+                    'Action:\n```\n{{\n  "action": "Final Answer",\n  "action_input": "Final response to human"\n}}\n\n'
+                    'Begin! Remember to ALWAYS respond with a valid JSON blob of a single action. '
+                    'Use tools if necessary and respond directly if appropriate. '
+                    'Ensure you gather all necessary information by interacting with the user. '
+                    'Format is Action:```$JSON_BLOB```then Observation.'
+                )
+            )
+        ),
         MessagesPlaceholder(variable_name='chat_history', optional=True),
-        HumanMessagePromptTemplate(prompt=PromptTemplate(input_variables=['agent_scratchpad', 'input'],
-        template='{input}\n\n{agent_scratchpad}\n (reminder to respond in a JSON blob no matter what)'))]
-    )
+        HumanMessagePromptTemplate(
+            prompt=PromptTemplate(
+                input_variables=['agent_scratchpad', 'input'],
+                template='{input}\n\n{agent_scratchpad}\n(reminder to respond in a JSON blob no matter what)'
+            )
+        )
+    ]
+)
+
 
     agent = create_structured_chat_agent(llm,tools,prompt)
     agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
@@ -337,7 +397,7 @@ async def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: list):
                 
                 {
                     "role": "user",
-                    "content": "You are a professional HVAC TECHNICAL consultant. Based on the chat history, create a streamlined material plan for the user's HVAC quote request, choosing what materials to use, and how much would be used and where. MAKE SURE TO BE VERY SPECIFIC in what materials you will use and how much. ALSO MAKE SURE TO PROVIDE A BLURB AT THE START OF THE RESPONSE And THEN A MATERIAL LIST AND HOW MUCH YOU WILL NEEED. DO NOT LIST PRICES JUST LIST MATERIALS NEEDED AND HOW MUCH OF THAT MATERIAL" + "Here is the chat history:" + str(chat_history)
+                    "content": "You are a professional HVAC TECHNICAL consultant for Walter HVAC Services located in Chantilly Virginia. Based on the chat history, create a streamlined material plan for the user's HVAC quote request, choosing what materials to use, and how much would be used and where. MAKE SURE TO BE VERY SPECIFIC in what materials you will use and how much. ALSO MAKE SURE TO PROVIDE A BLURB AT THE START OF THE RESPONSE And THEN A MATERIAL LIST AND HOW MUCH YOU WILL NEEED. DO NOT LIST PRICES JUST LIST MATERIALS NEEDED AND HOW MUCH OF THAT MATERIAL" + "Here is the chat history:" + str(chat_history)
 
                 }
             ],
@@ -371,7 +431,7 @@ async def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: list):
 
     llm.groq_api_key = random.choice(tools.initialize_groq.api_keys)    
     agent_executor = initialize_web_search_agent(llm=llm)
-    output = agent_executor.invoke({"input":"Given the chat history --> "+streamlined_output+"<-- AS WELL AS THE CONSULTANT'S INFORMATION -->" + consoltation_output + " --> look for labor and material costs for whatever the user asked for in the AREA NEAR ADDRESS OF USERS PROPERTY. maybe also use the costs of houses or properties very near to that location to decide on the cost. BE VERY SPECIFIC. LOTS OF NUMBERS. Also for material costs only use the consoltation_output, and search up the materials individually to find the price."})
+    output = agent_executor.invoke({"input":"YOU MUST SEARCH FOR THIS COMPANY IN THE SEARCH RESULTS LIKE WHAT SERVICES THEY OFFER AND WHAT IS THE COST. ALSO SEARCH THE FOLLOWING IN WEB:  Given the chat history --> "+streamlined_output+"<-- AS WELL AS THE CONSULTANT'S INFORMATION -->" + consoltation_output + " --> look for labor and material costs for whatever the user asked for in the AREA NEAR ADDRESS OF USERS PROPERTY. ALSO use the costs of A/C units and HVAC related things very near to THE SAME LOCATION AS/NEAR TO  THE ADDRESS to decide on the cost. BE VERY SPECIFIC. LOTS OF NUMBERS. Also for material costs only use the consultants information, and search up the materials individually to find the price."})
 
     refined_output = str(output["output"])
     refined_output = refined_output[refined_output.find('"')+1:refined_output.rfind('"')-1]
@@ -463,7 +523,7 @@ async def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: list):
                 {
                     "role": "system",
                     "content": "You are an expert in \
-                        correcting an input. YOU MUST START THE RESPONSE WITH 'RENOVATION QUOTE DOCUMENT' heading.\
+                        correcting an input. YOU MUST START THE RESPONSE WITH 'WALTER HVAC SERVICES - QUOTE DOCUMENT' heading.\
                               ADDRESS MUST BE INCLUDED IT WILL BE THERE IN THE CONTEXT GIVEN TO YOU!\
                                 YOU MUST INCLUDE ALLLLLLLLLLLLLLLLLLLLLLL ITEMIZED COSTS NO MATTER HOWEVER LONG THE LIST OF ITEMIZED COSTS IS !!!! THIS IS A \
                                     RENOVATION QUOTE AND WE NEED TO KNOW EVERY SINGLE DAMN COST!!!!"

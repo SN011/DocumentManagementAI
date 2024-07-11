@@ -327,8 +327,9 @@ def initialize_quote_bot(client:Groq, llm:ChatGroq, input_func: Callable[[],str]
 
 
     
-
-def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: list):
+import tools
+async def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: list):
+    llm.groq_api_key = random.choice(tools.initialize_groq.api_keys)    
     consultors_list = []
     consultationbot = client.chat.completions.create(
             messages=[
@@ -346,7 +347,7 @@ def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: list):
     consultors_list.append(consoltation_output)
 
 
-
+    llm.groq_api_key = random.choice(tools.initialize_groq.api_keys)    
     quotebot = client.chat.completions.create(
             messages=[
 
@@ -368,6 +369,7 @@ def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: list):
         )
     streamlined_output = (quotebot.choices[0].message.content)
 
+    llm.groq_api_key = random.choice(tools.initialize_groq.api_keys)    
     agent_executor = initialize_web_search_agent(llm=llm)
     output = agent_executor.invoke({"input":"Given the chat history --> "+streamlined_output+"<-- AS WELL AS THE CONSULTANT'S INFORMATION -->" + consoltation_output + " --> look for labor and material costs for whatever the user asked for in the AREA NEAR ADDRESS OF USERS PROPERTY. maybe also use the costs of houses or properties very near to that location to decide on the cost. BE VERY SPECIFIC. LOTS OF NUMBERS. Also for material costs only use the consoltation_output, and search up the materials individually to find the price."})
 
@@ -398,7 +400,7 @@ def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: list):
     #     ctr += 1
 
     # print(newstr)
-
+    llm.groq_api_key = random.choice(tools.initialize_groq.api_keys)    
     quotebot2 = client.chat.completions.create(
             messages=[
 
@@ -453,7 +455,7 @@ def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: list):
     output2 = (quotebot2.choices[0].message.content)
     print(output2)
 
-    
+    llm.groq_api_key = random.choice(tools.initialize_groq.api_keys)    
     quote_dict_corrected = parse_quote(output2)
     corrector = client.chat.completions.create(
             messages=[

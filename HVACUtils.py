@@ -23,7 +23,7 @@ from langchain.tools.retriever import create_retriever_tool
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain.chains import create_retrieval_chain
 from langchain_community.tools.tavily_search import TavilySearchResults
-
+from typing import Callable
 
 
 def initialize_web_search_agent(llm:ChatGroq):
@@ -244,54 +244,54 @@ def parse_quote(quote_str):
     return quote_details
 
 
+import queue
 
-
-def initialize_quote_bot(client:Groq, llm:ChatGroq):
+def initialize_quote_bot(client:Groq, llm:ChatGroq, input_func: Callable[[],str], output_func: Callable[[str],str], human_response_queue: queue.Queue):
     
     system_msg = """
-                You are an expert at questioning the client about their renovation or contstruction project quote.
-                Please keep in mind all of these things when asking questions: ask the user specific info needed for the quote, such as:
-                IMPORTANT!: YOUR NAME IS MARVIN! you must say it when you speak for the FIRST time only! never again.
-                    1.Property Details:
-                    Address and location of the property.
-                    Type of property (e.g., residential, commercial).
-                    Age and current condition of the property.
-                    Square footage of the area to be renovated.
-                    2.Scope of the Project:
-                    Detailed description of the renovation work required.
-                    Specific areas or rooms that need renovation.
-                    Desired changes and additions (e.g., new rooms, extensions, wall removal).
-                    Level of finishes desired (standard, premium, luxury).
-                    3.Design Preferences:
-                    Style or theme of the renovation (modern, traditional, industrial, etc.).
-                    Color schemes and material preferences.
-                    Any specific fixtures or features desired (e.g., type of flooring, lighting fixtures).
-                    4.Budget:
-                    Your budget range for the project.
-                    Any flexibility within the budget.
-                    5.Timeline:
-                    Desired start date and completion date.
-                    Any constraints or deadlines (e.g., events planned at the property).
-                    Legal and Compliance Information:
-                    Information on any permits or approvals already obtained.
-                    Any restrictions or caveats affecting the property.
-                    6.Utility Modifications:
-                    Changes or improvements to electrical, plumbing, or HVAC systems.
-                    Details of any provisions for appliances or systems (e.g., energy-efficient or smart home features).
-                    7.Access & Logistics:
-                    Access requirements for renovation or construction work (e.g., elevator access, restricted hours).
-                    Logistic considerations necessary for the project (e.g., space for storing materials, parking for construction vehicles).
-                    8.Special Requirements:
-                    Access provisions for renovations or construction work done on the property.
-                    Special considerations or instructions (e.g., conserving existing architectural features).
-                    What specific materials they are looking at.
-                    Information about other construction or renovation projects completed on the property.
-                    IMPORTANT!: Make sure you get clear answers from the user that can actually be used for making the quote, and if you are not provided a clear answer ask to clarify, and restate the question and explain what it means.
-                    IMPORTANT!: Ask each question that you have ONE BY ONE
+    You are Marvin, an expert at questioning clients about their HVAC service needs to provide accurate quotes. When you speak for the first time, introduce yourself as Marvin. Ask the user specific information needed for the quote. Follow these guidelines:
 
-                    IMPORTANT!: WHEN YOU HAVE ALL THE INFORMATION, JUST SAY 'hehehe' at the end.
+    1. **Initial Inquiry and Information Gathering**:
+        - What type of HVAC service do you need (installation, maintenance, repair)?
+        - What is the make and model of your current HVAC system?
+        - Are there any specific issues or symptoms you are experiencing?
 
-                """
+    2. **Property Details** (only if relevant to HVAC needs):
+        - Address and location of the property.
+        - Type of property (residential, commercial).
+        - Age and current condition of the property.
+        - Size of the home or area that needs heating/cooling.
+        - Number of rooms and their usage (e.g., bedrooms, office space).
+
+    3. **System Details**:
+        - Age and efficiency rating of the existing HVAC system.
+        - Any known problems with the current system.
+        - Recent changes to the HVAC system.
+
+    4. **Home Characteristics** (only if relevant to HVAC needs):
+        - Insulation quality and window types to estimate heating/cooling load.
+        - Any unique architectural features that may affect HVAC installation.
+
+    5. **Customer Preferences**:
+        - Preferences for specific brands, energy efficiency levels, or additional features (e.g., smart thermostats, air purifiers).
+        - Level of finishes desired (standard, premium, luxury).
+
+    6. **Budget**:
+        - Your budget range for the project.
+        - Any flexibility within the budget.
+
+    7. **Timeline**:
+        - Desired start date and completion date.
+        - Any constraints or deadlines (e.g., events planned at the property).
+
+   
+
+    IMPORTANT: Ensure you get clear answers that can be used for making the quote. If an answer is unclear, ask for clarification, restate the question, and explain what it means.
+
+    IMPORTANT: Ask each question ONE BY ONE.
+
+    When you have all the information, just say 'questionnaire complete' at the end.
+"""
 
 
     chat_history = []
@@ -300,7 +300,8 @@ def initialize_quote_bot(client:Groq, llm:ChatGroq):
     while True:
 
         
-        client_req = str(input())
+        client_req = str(input_func())
+        human_response_queue.put(client_req)
         print(client_req)
         quotebot = client.chat.completions.create(
             messages=[
@@ -320,26 +321,22 @@ def initialize_quote_bot(client:Groq, llm:ChatGroq):
             model="llama3-70b-8192",
         )
         output = (quotebot.choices[0].message.content)
-        print(output)
+        output_func(output)
         chat_history.append("CLIENT'S REQUEST: " + client_req + " | YOUR RESPONSE: " + output)
-        if('hehehe' in output.lower()): break
+        if('questionnaire' in output.lower() and 'complete' in output.lower()): break
 
 
     
 
+def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: list):
     consultors_list = []
     consultationbot = client.chat.completions.create(
             messages=[
 
-                {
-                    "role": "system",
-                    "content": system_msg
-
-                },
-
+                
                 {
                     "role": "user",
-                    "content": "You are a professional renovation consultant. Based on the chat history, create a streamlined material plan for the user's quote request, choosing what materials to use, and how much would be used and where. MAKE SURE TO BE VERY SPECIFIC in what materials you will use and how much. ALSO MAKE SURE TO PROVIDE A BLURB AT THE START OF THE RESPOnse And THEN A MATERIAL LIST AND HOW MUCH YOU WILL NEEED. DO NOT LIST PRICES JUST LIST MATERIALS NEEDED AND HOW MUCH OF THAT MATERIAL" + "Here is the chat history:" + str(chat_history)
+                    "content": "You are a professional HVAC TECHNICAL consultant. Based on the chat history, create a streamlined material plan for the user's HVAC quote request, choosing what materials to use, and how much would be used and where. MAKE SURE TO BE VERY SPECIFIC in what materials you will use and how much. ALSO MAKE SURE TO PROVIDE A BLURB AT THE START OF THE RESPONSE And THEN A MATERIAL LIST AND HOW MUCH YOU WILL NEEED. DO NOT LIST PRICES JUST LIST MATERIALS NEEDED AND HOW MUCH OF THAT MATERIAL" + "Here is the chat history:" + str(chat_history)
 
                 }
             ],
@@ -362,7 +359,7 @@ def initialize_quote_bot(client:Groq, llm:ChatGroq):
                 {
                     "role": "user",
                     "content": "Based on the chat history as well as the consultors list of materials, you must put all the required\
-                          information for the quote (along with location of property) into a streamlined format so that a web search query \
+                          information for the HVAC quote (along with location of property) into a streamlined format so that a web search query \
                             can be formed for it. Your response must be well-formed and include all details EVEN THE EXPLICIT ADDRESSS!!. \
                                 List every item explicitly. INCLUDE ADDRESS OF CLIENT AT ALL TIMES!!!! IT IS IN CHAT HISTORY!!" + "Chat History for your own context and info: [" + str(chat_history) + "][Consultors List: " + str(consultors_list) + ']'
                 }
@@ -410,7 +407,8 @@ def initialize_quote_bot(client:Groq, llm:ChatGroq):
                     "content": """You are an expert in PREPARING A REAL ESTATE QUOTE IN PROPER FORMAT from ONLY what is in the user's request, given a web search synthesis as one input and user's request as another input.\
                         YOU ARE TO FOLLOW THIS TEMPLATE AT ALL TIMES - EXACTLY ONLY ONLY ONLY ONLY ONLY ONLY ONLY ONLY!!!!!!! IN THIS FORMAT - OR ELSE YOU WILL BE SAD FOR THE REST OF YOUR LIFE \
                             ALL COMPONENTS AND ITEMIZED ITEMS SHALL BE LEFT EXACTLY AS IN INPUT. IMPORTANT: ITEMIZED COSTS IN THE INPUT SHALL BE ENUMERATED NO MATTER WHAT! FOLLOW INSTRUCTIONS FOLLOW INSTRCUTIONS I WILL GET REALLY MAD IF U DONT: \
-                            **Project Overview:**
+                    YOU ARE A MASTER OF JUDGEMENT AND YOU KNOW HOW TO FOLLOW EVERY SINGLE DIRECION GIVEN TO YOU.
+                             **Project Overview:**
     - Project Description: [Brief description of the project scope and objectives]
     - Length of Time for Project [User's desire for how much time he wants to do renovations]
 
@@ -447,7 +445,7 @@ def initialize_quote_bot(client:Groq, llm:ChatGroq):
                     "content": "Based on the input, which is <<<"+refined_output+">>> you must parse the input for the \
                         renovation quote so that your response talks about ONLY the stuff relevant to the user's quote request. \
                             Omit the 'average' costs and 'sources'. IMPORTANT: GIVE AN EXACT AMOUNT FOR MATERIAL VALUE & LABOR COST: NO RANGES ! PICK MAX. \
-                                " + "USer's request for your own context and info: " + str(output)
+                                " + "User's request for your own context and info: " + str(output)
                 }
             ],
             model="llama3-70b-8192",
@@ -475,11 +473,11 @@ def initialize_quote_bot(client:Groq, llm:ChatGroq):
                     "content":
                         "Based on the input, which is <<<" + output2 + ">>>, you must parse the input from the renovation quote "
                         "and REPLACE AS IT IS  the total values for the following categories: "
-                        "LABOR COSTS: $" + str(quote_dict_corrected["labor_cost"]) + ", "
-                        "MATERIAL COSTS: $" + str(quote_dict_corrected["total_material_cost"]) + ", and "
-                        "TOTAL ESTIMATED COSTS: $" + str(quote_dict_corrected["total_estimated_cost"]) + ", and "
-                        "DEPOSIT: " + str(quote_dict_corrected["payment_terms"]["deposit_required"]) +
-                        "MONTHLY PAYMENT " + str(quote_dict_corrected["payment_terms"]["payment_schedule"]) + "." 
+                        "LABOR COSTS: $" + str(quote_dict_corrected.get("labor_cost",None)) + ", "
+                        "MATERIAL COSTS: $" + str(quote_dict_corrected.get("total_material_cost",None)) + ", and "
+                        "TOTAL ESTIMATED COSTS: $" + str(quote_dict_corrected.get("total_estimated_cost",None)) + ", and "
+                        "DEPOSIT: " + str(quote_dict_corrected.get("payment_terms",None).get("deposit_required",None)) +
+                        "MONTHLY PAYMENT " + str(quote_dict_corrected.get("payment_terms",None).get("payment_schedule",None)) + "." 
                 }
             ],
             model="llama3-70b-8192",

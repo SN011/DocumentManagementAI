@@ -234,9 +234,34 @@ class GmailSendPdfTool(BaseTool):
     def _arun(self):
         raise NotImplementedError("This tool does not support asynchronous operation yet.")
 
+# from HVACUtils import initialize_web_search_agent, initialize_quote_bot
+# from queue import Queue
+# from typing import Callable
+
+# class CustomerServiceTool(BaseTool):
+#     name = "CustomerServiceTool"
+#     description = "Asks customer / user a bunch of questions concerning a service (HVAC, renovation, plumbing, etc.)"
 
 
+
+#     def __init__(self):
+#         super().__init__()
+
+#     def _run(input_func: Callable[[],str], output_func: Callable[[str],str], human_response_queue: Queue):
+#         api_keys = ['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','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',
+#             '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','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']
+
+#         client = Groq(
+            
+#             api_key = random.choice(api_keys)
+#         )
+
+#         llm = ChatGroq(groq_api_key = client.api_key,
+#                     model_name = "llama3-70b-8192")
+        
+#         initialize_quote_bot(client, llm, )
     
+        
     
 
 

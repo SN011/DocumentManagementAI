@@ -30,4 +30,5 @@ test-chrome-ext/
 !testing_folder/
 !paths/
 !requirements.txt
+document_ids.txt
 tools/

@@ -11,6 +11,6 @@ def init_groq():
     )
 
     llm = ChatGroq(groq_api_key = client.api_key,
-                model_name = "llama3-70b-8192")
+                model_name = "llama3-70b-8192", streaming=True)
     
     return client, llm

@@ -25,132 +25,13 @@ from langchain.chains import create_retrieval_chain
 from langchain_community.tools.tavily_search import TavilySearchResults
 from typing import Callable
 
+from langchain.memory import ConversationSummaryBufferMemory
+
 
 def initialize_web_search_agent(llm:ChatGroq):
+    global mem
+    mem = ConversationSummaryBufferMemory(llm=llm)
     
-
-    
-
-
-
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system","You are a world class technical documentation writer"
-            ),
-            (
-                "user","{input}"
-            )
-        ]
-    )
-
-
-    output_parser = StrOutputParser()
-
-    chain = prompt | llm | output_parser
-    chain.invoke({"input":"how can langsmith help with testing"})
-
-
-
-    loader = WebBaseLoader("https://docs.smith.langchain.com/overview")
-
-    docs = loader.load()
-
-
-
-    embeddings = HuggingFaceEmbeddings()
-
-
-    text_splitter = RecursiveCharacterTextSplitter()
-    documents = text_splitter.split_documents(docs)
-
-    vector = FAISS.from_documents(documents,embeddings)
-
-
-
-
-    prompt = ChatPromptTemplate.from_template("""Answer the following question based only on the provided context:
-
-    {context}
-
-
-    Question: {input}""")
-
-    document_chain = create_stuff_documents_chain(llm,prompt)
-
-
-
-
-    retriever = vector.as_retriever()
-
-    retrieval_chain = create_retrieval_chain(retriever, document_chain)
-
-
-    response = retrieval_chain.invoke({"input":"how can langsmith help with testing"})
-    #print(response["answer"])
-
-
-
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system","You are a world class technical documentation writer"
-            ),
-            (
-                "user","{input}"
-            )
-        ]
-    )
-
-
-
-
-    prompt = ChatPromptTemplate.from_messages([
-        MessagesPlaceholder(variable_name="chat_history"),
-        ("user","{input}"),
-        ("user","Given the above conversation, generate a search query to look up in order to get information")
-    ])
-
-    retriever_chain = create_history_aware_retriever(llm, retriever, prompt)
-
-
-
-
-    chat_history = [HumanMessage(content="Can Langsmith help test my LLm applications?"),AIMessage(content="Yes!")]
-    retriever_chain.invoke({
-        "chat_history":chat_history,
-        "input":"Tell me how"
-    })
-
-
-    prompt = ChatPromptTemplate.from_messages([
-        ("system","Answer the user's questions based on the below context\n\n{context}"),
-        MessagesPlaceholder(variable_name="chat_history"),
-        ("user","{input}"),
-
-    ])
-    document_chain = create_stuff_documents_chain(llm,prompt)
-    retrieval_chain = create_retrieval_chain(retriever_chain,document_chain)
-
-
-
-
-    chat_history = [HumanMessage(content="Can Langsmith help test my LLm applications?"),AIMessage(content="Yes!")]
-    retrieval_chain.invoke({
-        "chat_history":chat_history,
-        "input":"Tell me how"
-    })
-
-
-
-
-    retriever_tool = create_retriever_tool(
-        retriever,
-        "langsmith_search",
-        "Search for info about LangSmith. For any questions about LangSmith, use this tool!"
-    )
-
-
 
 
     os.environ['TAVILY_API_KEY'] = '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'
@@ -161,9 +42,6 @@ def initialize_web_search_agent(llm:ChatGroq):
 
 
     tools = [search]
-
-
-    #prompt = hub.pull("hwchase17/structured-chat-agent")
     prompt = ChatPromptTemplate(
     input_variables=['agent_scratchpad', 'input', 'tool_names', 'tools'],
     input_types={
@@ -237,9 +115,9 @@ def initialize_web_search_agent(llm:ChatGroq):
     ]
 )
 
-
+    
     agent = create_structured_chat_agent(llm,tools,prompt)
-    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
+    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True, memory=mem)
 
     return agent_executor
 
@@ -388,7 +266,7 @@ def initialize_quote_bot(client:Groq, llm:ChatGroq, input_func: Callable[[],str]
 
     
 import tools
-async def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: list):
+async def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: str):
     llm.groq_api_key = random.choice(tools.initialize_groq.api_keys)    
     consultors_list = []
     consultationbot = client.chat.completions.create(
@@ -397,7 +275,7 @@ async def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: list):
                 
                 {
                     "role": "user",
-                    "content": "You are a professional HVAC TECHNICAL consultant for Walter HVAC Services located in Chantilly Virginia. Based on the chat history, create a streamlined material plan for the user's HVAC quote request, choosing what materials to use, and how much would be used and where. MAKE SURE TO BE VERY SPECIFIC in what materials you will use and how much. ALSO MAKE SURE TO PROVIDE A BLURB AT THE START OF THE RESPONSE And THEN A MATERIAL LIST AND HOW MUCH YOU WILL NEEED. DO NOT LIST PRICES JUST LIST MATERIALS NEEDED AND HOW MUCH OF THAT MATERIAL" + "Here is the chat history:" + str(chat_history)
+                    "content": "You are a professional HVAC TECHNICAL consultant for Walter HVAC Services located in Chantilly Virginia. Based on the chat history, create a streamlined material plan for the user's HVAC quote request, choosing what materials to use, and how much would be used and where. MAKE SURE TO BE VERY SPECIFIC in what materials you will use and how much. ALSO MAKE SURE TO PROVIDE A BLURB AT THE START OF THE RESPONSE And THEN A MATERIAL LIST AND HOW MUCH YOU WILL NEEED. DO NOT LIST PRICES JUST LIST MATERIALS NEEDED AND HOW MUCH OF THAT MATERIAL" + "\nHere is the chat history: " + "[" + chat_history + "]"
 
                 }
             ],
@@ -422,17 +300,18 @@ async def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: list):
                     "content": "Based on the chat history as well as the consultors list of materials, you must put all the required\
                           information for the HVAC quote (along with location of property) into a streamlined format so that a web search query \
                             can be formed for it. Your response must be well-formed and include all details EVEN THE EXPLICIT ADDRESSS!!. \
-                                List every item explicitly. INCLUDE ADDRESS OF CLIENT AT ALL TIMES!!!! IT IS IN CHAT HISTORY!!" + "Chat History for your own context and info: [" + str(chat_history) + "][Consultors List: " + str(consultors_list) + ']'
+                                List every item explicitly. INCLUDE ADDRESS OF CLIENT AT ALL TIMES!!!! IT IS IN CHAT HISTORY!!" + "Chat History for your own context and info: [" + (chat_history) + "] AND THE Consultors List: []" + str(consultors_list) + ']'
                 }
             ],
             model="llama3-70b-8192",
         )
     streamlined_output = (quotebot.choices[0].message.content)
-
+    
     llm.groq_api_key = random.choice(tools.initialize_groq.api_keys)    
     agent_executor = initialize_web_search_agent(llm=llm)
-    output = agent_executor.invoke({"input":"YOU MUST SEARCH FOR THIS COMPANY IN THE SEARCH RESULTS LIKE WHAT SERVICES THEY OFFER AND WHAT IS THE COST. ALSO SEARCH THE FOLLOWING IN WEB:  Given the chat history --> "+streamlined_output+"<-- AS WELL AS THE CONSULTANT'S INFORMATION -->" + consoltation_output + " --> look for labor and material costs for whatever the user asked for in the AREA NEAR ADDRESS OF USERS PROPERTY. ALSO use the costs of A/C units and HVAC related things very near to THE SAME LOCATION AS/NEAR TO  THE ADDRESS to decide on the cost. BE VERY SPECIFIC. LOTS OF NUMBERS. Also for material costs only use the consultants information, and search up the materials individually to find the price."})
-
+    
+    output = agent_executor.invoke({"input":"YOU MUST SEARCH FOR WALTER HVAC SERVICES - CHANTILLY VIRGINIA IN THE SEARCH RESULTS LIKE WHAT SERVICES THEY OFFER AND WHAT IS THE COST. ALSO SEARCH THE FOLLOWING IN WEB:  Given the chat history --> "+streamlined_output+"<-- AS WELL AS THE CONSULTANT'S INFORMATION -->" + consoltation_output + " --> look for labor and material costs for whatever the user asked for in the AREA NEAR ADDRESS OF USERS PROPERTY. ALSO use the costs of A/C units and HVAC related things very near to THE SAME LOCATION AS/NEAR TO  THE ADDRESS to decide on the cost. BE VERY SPECIFIC. LOTS OF NUMBERS. Also for material costs only use the consultants information, and search up the materials individually to find the price."})
+    mem.save_context({"Human":"YOU MUST SEARCH FOR WALTER HVAC SERVICES - CHANTILLY VIRGINIA IN THE SEARCH RESULTS LIKE WHAT SERVICES THEY OFFER AND WHAT IS THE COST. ALSO SEARCH THE FOLLOWING IN WEB:  Given the chat history --> "+streamlined_output+"<-- AS WELL AS THE CONSULTANT'S INFORMATION -->" + consoltation_output + " --> look for labor and material costs for whatever the user asked for in the AREA NEAR ADDRESS OF USERS PROPERTY. ALSO use the costs of A/C units and HVAC related things very near to THE SAME LOCATION AS/NEAR TO  THE ADDRESS to decide on the cost. BE VERY SPECIFIC. LOTS OF NUMBERS. Also for material costs only use the consultants information, and search up the materials individually to find the price."},{"AI":str(output['output'])})
     refined_output = str(output["output"])
     refined_output = refined_output[refined_output.find('"')+1:refined_output.rfind('"')-1]
 

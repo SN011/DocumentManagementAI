@@ -234,34 +234,152 @@ class GmailSendPdfTool(BaseTool):
     def _arun(self):
         raise NotImplementedError("This tool does not support asynchronous operation yet.")
 
-# from HVACUtils import initialize_web_search_agent, initialize_quote_bot
-# from queue import Queue
-# from typing import Callable
 
-# class CustomerServiceTool(BaseTool):
-#     name = "CustomerServiceTool"
-#     description = "Asks customer / user a bunch of questions concerning a service (HVAC, renovation, plumbing, etc.)"
+import datetime
 
+class AppointmentBookingCalendarTool(BaseTool):
+    name = "AppointmentBookingCalendarTool"
+    description = "Books appointments by confirming dates in Google Calendar via OAuth, then confirms with the user, and then populates the correct calendar cell with all details provided by the user."
 
+    credentials_path: str = Field(..., description="Path to the credentials JSON file")
 
-#     def __init__(self):
-#         super().__init__()
+    class Config:
+        extra = Extra.allow
 
-#     def _run(input_func: Callable[[],str], output_func: Callable[[str],str], human_response_queue: Queue):
-#         api_keys = ['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','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',
-#             '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','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']
+    def __init__(self, credentials_path: str):
+        super().__init__()
+        self.credentials_path = credentials_path
+        self.creds = authenticate()
+        self.service = build('calendar', 'v3', credentials=self.creds)
 
-#         client = Groq(
-            
-#             api_key = random.choice(api_keys)
-#         )
+    def book_appointment(self, summary: str, location: str, description: str, start_time: str, end_time: str):
+        if not start_time or not end_time:
+            return "Start time and end time must be provided."
 
-#         llm = ChatGroq(groq_api_key = client.api_key,
-#                     model_name = "llama3-70b-8192")
-        
-#         initialize_quote_bot(client, llm, )
-    
-        
-    
+        # Convert times to RFC3339 format
+        start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S").isoformat()
+        end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S").isoformat()
+
+        event = {
+            'summary': summary,
+            'location': location,
+            'description': description,
+            'start': {
+                'dateTime': start_time,
+                'timeZone': 'America/New_York',
+            },
+            'end': {
+                'dateTime': end_time,
+                'timeZone': 'America/New_York',
+            },
+            'reminders': {
+                'useDefault': False,
+                'overrides': [
+                    {'method': 'email', 'minutes': 24 * 60},
+                    {'method': 'popup', 'minutes': 10},
+                ],
+            },
+        }
+
+        # Insert the event into the calendar
+        event_result = self.service.events().insert(calendarId='primary', body=event).execute()
+
+        return f"Event created: {event_result.get('htmlLink')}. PLEASE TELL THE HUMAN."
+
+    def list_appointments(self, time_min: str = None, time_max: str = None, max_results: int = 10):
+        now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
+        if time_min is None:
+            time_min = now
+        events_result = self.service.events().list(
+            calendarId='primary', timeMin=time_min, timeMax=time_max,
+            maxResults=max_results, singleEvents=True,
+            orderBy='startTime').execute()
+        events = events_result.get('items', [])
+
+        if not events:
+            return 'No upcoming events found.'
+
+        event_list = []
+        for event in events:
+            start = event['start'].get('dateTime', event['start'].get('date'))
+            event_list.append(f"{start}: {event['summary']}. PLEASE TELL THE HUMAN.")
+
+        return "\n".join(event_list)
+
+    def update_appointment(self, event_id: str, updated_summary: str = None, updated_location: str = None,
+                           updated_description: str = None, updated_start_time: str = None, updated_end_time: str = None):
+        event = self.service.events().get(calendarId='primary', eventId=event_id).execute()
+
+        if updated_summary:
+            event['summary'] = updated_summary
+        if updated_location:
+            event['location'] = updated_location
+        if updated_description:
+            event['description'] = updated_description
+        if updated_start_time:
+            event['start']['dateTime'] = datetime.datetime.strptime(updated_start_time, "%Y-%m-%d %H:%M:%S").isoformat()
+        if updated_end_time:
+            event['end']['dateTime'] = datetime.datetime.strptime(updated_end_time, "%Y-%m-%d %H:%M:%S").isoformat()
+
+        updated_event = self.service.events().update(calendarId='primary', eventId=event['id'], body=event).execute()
+
+        return f"Event updated: {updated_event.get('htmlLink')}. PLEASE TELL THE HUMAN."
+
+    def delete_appointment(self, event_id: str):
+        self.service.events().delete(calendarId='primary', eventId=event_id).execute()
+        return "Event deleted.  PLEASE TELL THE HUMAN."
+
+    def check_availability(self, start_time: str, end_time: str):
+        time_min = datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S").isoformat() + 'Z'
+        time_max = datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S").isoformat() + 'Z'
+
+        events_result = self.service.events().list(
+            calendarId='primary', timeMin=time_min, timeMax=time_max,
+            singleEvents=True, orderBy='startTime').execute()
+        events = events_result.get('items', [])
+
+        if events:
+            return False, events
+        return True, []
+
+    def _run(self, action: str, summary: str = '', location: str = '', description: str = '',
+             start_time: str = '', end_time: str = '', time_min: str = None, time_max: str = None,
+             max_results: int = 10, event_id: str = '', updated_summary: str = None,
+             updated_location: str = None, updated_description: str = None,
+             updated_start_time: str = None, updated_end_time: str = None):
+        if action == 'book':
+            if not start_time or not end_time:
+                return "Start time and end time must be provided."
+
+            available, conflicting_events = self.check_availability(start_time, end_time)
+            if not available:
+                conflicts = "\n".join([f"{event['start'].get('dateTime', event['start'].get('date'))}: {event['summary']}" for event in conflicting_events])
+                return f"The time slot is not available. Conflicting events:\n{conflicts}"
+
+            return (f"Please confirm the following appointment details WITH THE HUMAN:\n"
+                    f"Summary: {summary}\n"
+                    f"Location: {location}\n"
+                    f"Description: {description}\n"
+                    f"Start: {start_time}\n"
+                    f"End: {end_time}\n"
+                    f"Reply with 'yes' to confirm or 'no' to cancel.")
+
+        elif action == 'confirm_book':
+            return self.book_appointment(summary, location, description, start_time, end_time)
+
+        elif action == 'list':
+            return self.list_appointments(time_min, time_max, max_results)
+
+        elif action == 'update':
+            return self.update_appointment(event_id, updated_summary, updated_location, updated_description, updated_start_time, updated_end_time)
+
+        elif action == 'delete':
+            return self.delete_appointment(event_id)
+
+        else:
+            return "Invalid action specified.  PLEASE TELL THE HUMAN."
+
+    def _arun(self):
+        raise NotImplementedError("This tool does not support asynchronous operation yet.")
 
 

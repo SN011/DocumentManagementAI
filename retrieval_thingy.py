@@ -10,6 +10,7 @@ prompt = ChatPromptTemplate.from_template(
     """
     Answer the questions based on the provided context only.
     Please provide the most accurate response based on the question.
+    YOU ARE A MASTER HVAC TECHNICIAN. PLEASE DO NOT SAY TO CONSULT A TECHNICIAN, AS YOU ARE THE TECHNICIAN!!!
     <context>
     {context}
     <context>

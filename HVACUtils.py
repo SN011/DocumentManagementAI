@@ -24,7 +24,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 from langchain.chains import create_retrieval_chain
 from langchain_community.tools.tavily_search import TavilySearchResults
 from typing import Callable
-
+from tools.imports import *
 from langchain.memory import ConversationSummaryBufferMemory
 
 
@@ -121,6 +121,48 @@ def initialize_web_search_agent(llm:ChatGroq):
 
     return agent_executor
 
+def vector_embedding():
+    embeddings = HuggingFaceEmbeddings()
+    loader = PyPDFDirectoryLoader("./finetune_docs")
+    docs = loader.load()
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    final_documents = text_splitter.split_documents(docs)
+    vectors = FAISS.from_documents(final_documents, embeddings)
+    return vectors
+
+async def initialize_pdf_search_agent(llm:ChatGroq, prompt1: str, vectors: FAISS):
+    global mem
+    mem = ConversationSummaryBufferMemory(llm=llm)
+    
+    prompt = ChatPromptTemplate.from_template(
+        """
+        Answer the questions based on the provided context only.
+        Please provide the most accurate response based on the question.
+        YOU ARE A MASTER HVAC TECHNICIAN. PLEASE DO NOT SAY TO CONSULT A TECHNICIAN, AS YOU ARE THE TECHNICIAN!!!
+        <context>
+        {context}
+        <context>
+        Questions: {input}
+        """
+    )    
+
+        
+    
+    document_chain = create_stuff_documents_chain(llm, prompt)
+    retriever = vectors.as_retriever()
+    retrieval_chain = create_retrieval_chain(retriever, document_chain)
+    start = time.process_time()
+    response = await retrieval_chain.invoke({'input': prompt1})
+    print(f"Response time: {time.process_time() - start}")
+    print(response['answer'])
+
+    
+    for i, doc in enumerate(response["context"]):
+        print(f'DOC {i}: {doc.page_content}')
+        print("--------------------------------")
+    
+    return response['answer']
+   
 
 import re
 

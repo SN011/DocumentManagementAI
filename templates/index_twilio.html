@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Call and SMS Hub</title>
+</head>
+<body>
+    <h1>Call and SMS Hub</h1>
+    <table border="1">
+        <tr>
+            <th>Type</th>
+            <th>Number</th>
+            <th>Message</th>
+        </tr>
+        {% for caller in callers %}
+        <tr>
+            <td>{{ caller.type }}</td>
+            <td>{{ caller.number }}</td>
+            <td>{{ caller.message if caller.type == 'sms' else 'N/A' }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

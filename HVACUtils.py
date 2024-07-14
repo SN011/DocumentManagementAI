@@ -130,7 +130,7 @@ def vector_embedding():
     vectors = FAISS.from_documents(final_documents, embeddings)
     return vectors
 
-async def initialize_pdf_search_agent(llm:ChatGroq, prompt1: str, vectors: FAISS):
+async def initialize_pdf_search_agent(llm:ChatGroq, prompt1: str, vectors: FAISS, chat_history: ConversationSummaryBufferMemory):
     global mem
     mem = ConversationSummaryBufferMemory(llm=llm)
     
@@ -154,13 +154,13 @@ async def initialize_pdf_search_agent(llm:ChatGroq, prompt1: str, vectors: FAISS
     retrieval_chain = create_retrieval_chain(retriever, document_chain)
     start = time.process_time()
     response = retrieval_chain.invoke({'input': prompt1})
-    print(f"Response time: {time.process_time() - start}")
-    print(response['answer'])
-
+    # print(f"Response time: {time.process_time() - start}")
+    # print(response['answer'])
+    await chat_history.asave_context({"Human":prompt1},{"AI":response['answer']})
     
-    for i, doc in enumerate(response["context"]):
-        print(f'DOC {i}: {doc.page_content}')
-        print("--------------------------------")
+    # for i, doc in enumerate(response["context"]):
+    #     print(f'DOC {i}: {doc.page_content}')
+    #     print("--------------------------------")
     
     return response['answer']
    
@@ -309,7 +309,7 @@ def initialize_quote_bot(client:Groq, llm:ChatGroq, input_func: Callable[[],str]
 
     
 import tools
-async def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: str):
+async def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: ConversationSummaryBufferMemory):
     llm.groq_api_key = random.choice(tools.initialize_groq.api_keys)    
     consultors_list = []
     consultationbot = client.chat.completions.create(
@@ -352,9 +352,9 @@ async def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: str):
     
     llm.groq_api_key = random.choice(tools.initialize_groq.api_keys)    
     agent_executor = initialize_web_search_agent(llm=llm)
-    
+    agent_executor.memory = chat_history
     output = agent_executor.invoke({"input":"YOU MUST SEARCH FOR WALTER HVAC SERVICES - CHANTILLY VIRGINIA IN THE SEARCH RESULTS LIKE WHAT SERVICES THEY OFFER AND WHAT IS THE COST. ALSO SEARCH THE FOLLOWING IN WEB:  Given the chat history --> "+streamlined_output+"<-- AS WELL AS THE CONSULTANT'S INFORMATION -->" + consoltation_output + " --> look for labor and material costs for whatever the user asked for in the AREA NEAR ADDRESS OF USERS PROPERTY. ALSO use the costs of A/C units and HVAC related things very near to THE SAME LOCATION AS/NEAR TO  THE ADDRESS to decide on the cost. BE VERY SPECIFIC. LOTS OF NUMBERS. Also for material costs only use the consultants information, and search up the materials individually to find the price."})
-    
+    await chat_history.asave_context({"input":"YOU MUST SEARCH FOR WALTER HVAC SERVICES - CHANTILLY VIRGINIA IN THE SEARCH RESULTS LIKE WHAT SERVICES THEY OFFER AND WHAT IS THE COST. ALSO SEARCH THE FOLLOWING IN WEB:  Given the chat history --> "+streamlined_output+"<-- AS WELL AS THE CONSULTANT'S INFORMATION -->" + consoltation_output + " --> look for labor and material costs for whatever the user asked for in the AREA NEAR ADDRESS OF USERS PROPERTY. ALSO use the costs of A/C units and HVAC related things very near to THE SAME LOCATION AS/NEAR TO  THE ADDRESS to decide on the cost. BE VERY SPECIFIC. LOTS OF NUMBERS. Also for material costs only use the consultants information, and search up the materials individually to find the price."},{"output":str(output.get('output',None))})
     refined_output = str(output["output"])
     refined_output = refined_output[refined_output.find('"')+1:refined_output.rfind('"')-1]
 

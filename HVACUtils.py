@@ -138,7 +138,8 @@ async def initialize_pdf_search_agent(llm:ChatGroq, prompt1: str, vectors: FAISS
         """
         Answer the questions based on the provided context only.
         Please provide the most accurate response based on the question.
-        YOU ARE A MASTER HVAC TECHNICIAN. PLEASE DO NOT SAY TO CONSULT A TECHNICIAN, AS YOU ARE THE TECHNICIAN!!!
+        IMPORTANT: YOU ARE A MASTER HVAC TECHNICIAN AND YOU MJUST NEVER TAKE ANY GUESSES. YOU MUST NEVER CITE YOUR SOURCES, BUT TALK LIKE YOU KNOW IT ALL!! PLEASE DO NOT SAY TO CONSULT A TECHNICIAN, AS YOU ARE THE TECHNICIAN!!!
+        IMPORTANT: YOU MUST NEVER INCLUDE ASTERISKS OR QUOTATION MARKS IN YOUR RESPONSE!!!!!!
         <context>
         {context}
         <context>
@@ -146,13 +147,13 @@ async def initialize_pdf_search_agent(llm:ChatGroq, prompt1: str, vectors: FAISS
         """
     )    
 
-        
+    
     
     document_chain = create_stuff_documents_chain(llm, prompt)
     retriever = vectors.as_retriever()
     retrieval_chain = create_retrieval_chain(retriever, document_chain)
     start = time.process_time()
-    response = await retrieval_chain.invoke({'input': prompt1})
+    response = retrieval_chain.invoke({'input': prompt1})
     print(f"Response time: {time.process_time() - start}")
     print(response['answer'])
 
@@ -353,7 +354,7 @@ async def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: str):
     agent_executor = initialize_web_search_agent(llm=llm)
     
     output = agent_executor.invoke({"input":"YOU MUST SEARCH FOR WALTER HVAC SERVICES - CHANTILLY VIRGINIA IN THE SEARCH RESULTS LIKE WHAT SERVICES THEY OFFER AND WHAT IS THE COST. ALSO SEARCH THE FOLLOWING IN WEB:  Given the chat history --> "+streamlined_output+"<-- AS WELL AS THE CONSULTANT'S INFORMATION -->" + consoltation_output + " --> look for labor and material costs for whatever the user asked for in the AREA NEAR ADDRESS OF USERS PROPERTY. ALSO use the costs of A/C units and HVAC related things very near to THE SAME LOCATION AS/NEAR TO  THE ADDRESS to decide on the cost. BE VERY SPECIFIC. LOTS OF NUMBERS. Also for material costs only use the consultants information, and search up the materials individually to find the price."})
-    mem.save_context({"Human":"YOU MUST SEARCH FOR WALTER HVAC SERVICES - CHANTILLY VIRGINIA IN THE SEARCH RESULTS LIKE WHAT SERVICES THEY OFFER AND WHAT IS THE COST. ALSO SEARCH THE FOLLOWING IN WEB:  Given the chat history --> "+streamlined_output+"<-- AS WELL AS THE CONSULTANT'S INFORMATION -->" + consoltation_output + " --> look for labor and material costs for whatever the user asked for in the AREA NEAR ADDRESS OF USERS PROPERTY. ALSO use the costs of A/C units and HVAC related things very near to THE SAME LOCATION AS/NEAR TO  THE ADDRESS to decide on the cost. BE VERY SPECIFIC. LOTS OF NUMBERS. Also for material costs only use the consultants information, and search up the materials individually to find the price."},{"AI":str(output['output'])})
+    
     refined_output = str(output["output"])
     refined_output = refined_output[refined_output.find('"')+1:refined_output.rfind('"')-1]
 

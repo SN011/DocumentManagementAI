@@ -50,123 +50,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             authToken = token;
             console.log('Auth token obtained:', token);
-            fetch('http://localhost:5000/authenticate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + token
-                }
-            }).then(response => response.json())
-                .then(data => {
-                    console.log('User data fetched:', data);
-                    chrome.storage.local.get(['phoneNumber', 'recEmail'], (result) => {
-                        console.log('Existing phone and recemail:', result);
-                        data.phone = result.phoneNumber || '';
-                        data.recemail = result.recEmail || '';
-                        chrome.storage.local.set({ userInfo: data }, () => {
-                            console.log('User info stored:', data);
-                            displayUserInfo(data);
-                            document.getElementById('phoneNumber').value = data.phone;
-                            document.getElementById('recEmail').value = data.recemail;
-                            document.getElementById('nextButton').style.display = 'block';
-                        });
-                    });
-                })
-                .catch(error => {
-                    console.error('Error fetching user data:', error);
-                });
+            authenticateUser(token);
         });
     });
 
-    document.getElementById('saveCredentialsButton').addEventListener('click', () => {
-        const phoneNumber = document.getElementById('phoneNumber').value;
-        const recEmail = document.getElementById('recEmail').value;
-        const userName = document.getElementById('userName').textContent;
-        const userEmail = document.getElementById('userEmail').textContent;
-
-        console.log('Saving credentials:', { phoneNumber, recEmail });
-
-        const credentials = {
-            name: userName,
-            email: userEmail,
-            recemail: recEmail,
-            phone: phoneNumber
-        };
-
-        fetch('http://localhost:5000/set_credentials', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(credentials)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                console.log('Credentials saved:', data);
-                document.getElementById('phoneNumberDisplay').textContent = phoneNumber;
-                document.getElementById('recEmailDisplay').textContent = recEmail;
-                document.getElementById('phoneNumberDisplay').style.display = 'block';
-                document.getElementById('recEmailDisplay').style.display = 'block';
-                document.getElementById('phoneNumberInput').style.display = 'none';
-                document.getElementById('recEmailInput').style.display = 'none';
-                chrome.storage.local.set({ phoneNumber: phoneNumber, recEmail: recEmail });
-            } else {
-                console.error('Failed to save credentials:', data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error saving credentials:', error);
-        });
-    });
-
-    document.getElementById('logoutButton').addEventListener('click', () => {
-        console.log('Logout button clicked');
-        if (authToken) {
-            // Revoke the access token
-            fetch(`https://accounts.google.com/o/oauth2/revoke?token=${authToken}`, {
-                method: 'GET',
-                mode: 'cors'
-            }).then(response => {
-                if (response.ok) {
-                    console.log('Access token revoked');
-                    clearUserData();
-                } else {
-                    console.error('Error revoking access token');
-                    clearUserData(); // Attempt to clear data even if token revocation fails
-                }
-            }).catch(error => {
-                console.error('Error revoking access token:', error);
-                clearUserData(); // Attempt to clear data even if there's an error
-            });
-        } else {
-            console.log('No auth token found');
-            clearUserData();
-        }
-    });
-
-    document.getElementById('nextButton').addEventListener('click', () => {
-        console.log('Next button clicked');
-        document.getElementById('googleSignIn').style.display = 'none';
-        document.getElementById('voiceAssistant').style.display = 'flex';
-        document.querySelector('.orb').style.display = 'block';
-    });
-
-    document.getElementById('backButton').addEventListener('click', () => {
-        console.log('Back button clicked');
-        document.getElementById('googleSignIn').style.display = 'flex';
-        document.getElementById('voiceAssistant').style.display = 'none';
-        document.querySelector('.orb').style.display = 'none';
-    });
-
+    document.getElementById('saveCredentialsButton').addEventListener('click', saveCredentials);
+    document.getElementById('logoutButton').addEventListener('click', logout);
+    document.getElementById('nextButton').addEventListener('click', showAssistant);
+    document.getElementById('backButton').addEventListener('click', showLogin);
     document.getElementById('sendTextButton').addEventListener('click', handleTextInput);
-    document.getElementById('textInput').addEventListener('keydown', function(event) {
+    document.getElementById('textInput').addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
             handleTextInput();
         }
     });
 
-    document.addEventListener('keydown', function(event) {
+    document.addEventListener('keydown', (event) => {
         if (event.key === 'p' || event.key === 'P') {
             const activeElement = document.activeElement;
             if (activeElement && activeElement.id !== 'textInput') {
@@ -182,6 +81,101 @@ document.addEventListener('DOMContentLoaded', () => {
     checkLoginStatus();
 });
 
+function authenticateUser(token) {
+    fetch('http://localhost:5000/authenticate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        }
+    }).then(response => response.json())
+        .then(data => {
+            console.log('User data fetched:', data);
+            chrome.storage.local.get(['phoneNumber', 'recEmail'], (result) => {
+                console.log('Existing phone and recemail:', result);
+                data.phone = result.phoneNumber || '';
+                data.recemail = result.recEmail || '';
+                chrome.storage.local.set({ userInfo: data }, () => {
+                    console.log('User info stored:', data);
+                    displayUserInfo(data);
+                    document.getElementById('phoneNumber').value = data.phone;
+                    document.getElementById('recEmail').value = data.recemail;
+                    document.getElementById('nextButton').style.display = 'block';
+                });
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching user data:', error);
+        });
+}
+
+function saveCredentials() {
+    const phoneNumber = document.getElementById('phoneNumber').value;
+    const recEmail = document.getElementById('recEmail').value;
+    const userName = document.getElementById('userName').textContent;
+    const userEmail = document.getElementById('userEmail').textContent;
+
+    console.log('Saving credentials:', { phoneNumber, recEmail });
+
+    const credentials = {
+        name: userName,
+        email: userEmail,
+        recemail: recEmail,
+        phone: phoneNumber
+    };
+
+    fetch('http://localhost:5000/set_credentials', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(credentials)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            console.log('Credentials saved:', data);
+            chrome.storage.local.set({ phoneNumber: phoneNumber, recEmail: recEmail }, () => {
+                document.getElementById('phoneNumberDisplay').textContent = phoneNumber;
+                document.getElementById('recEmailDisplay').textContent = recEmail;
+                document.getElementById('phoneNumberDisplay').style.display = 'block';
+                document.getElementById('recEmailDisplay').style.display = 'block';
+                document.getElementById('phoneNumberInput').style.display = 'none';
+                document.getElementById('recEmailInput').style.display = 'none';
+            });
+        } else {
+            console.error('Failed to save credentials:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error saving credentials:', error);
+    });
+}
+
+function logout() {
+    console.log('Logout button clicked');
+    if (authToken) {
+        fetch(`https://accounts.google.com/o/oauth2/revoke?token=${authToken}`, {
+            method: 'GET',
+            mode: 'cors'
+        }).then(response => {
+            if (response.ok) {
+                console.log('Access token revoked');
+                clearUserData();
+            } else {
+                console.error('Error revoking access token');
+                clearUserData(); // Attempt to clear data even if token revocation fails
+            }
+        }).catch(error => {
+            console.error('Error revoking access token:', error);
+            clearUserData(); // Attempt to clear data even if there's an error
+        });
+    } else {
+        console.log('No auth token found');
+        clearUserData();
+    }
+}
+
 function clearUserData() {
     chrome.identity.removeCachedAuthToken({ token: authToken }, () => {
         console.log('Auth token removed');
@@ -193,7 +187,6 @@ function clearUserData() {
             document.getElementById('signInButton').style.display = 'block';
             document.getElementById('nextButton').style.display = 'none';
             authToken = '';
-            // Ensure orb is hidden
             document.querySelector('.orb').style.display = 'none';
             document.getElementById('googleSignIn').style.display = 'flex';
             document.getElementById('voiceAssistant').style.display = 'none';
@@ -242,7 +235,6 @@ function sendTextInput() {
     const inputText = document.getElementById('textInput').value;
     if (!inputText.trim()) return;
 
-    // Display user message
     displayMessage(inputText, 'user');
     
     fetch('http://localhost:5000/text_input', {
@@ -267,7 +259,6 @@ function sendHumanInput() {
     const inputText = document.getElementById('textInput').value;
     if (!inputText.trim()) return;
 
-    // Display user message
     displayMessage(inputText, 'user');
 
     socket.emit('provide_human_input', { text: inputText });
@@ -333,4 +324,16 @@ function fetchAudioResponse() {
         .catch(error => {
             console.error('Error:', error);
         });
+}
+
+function showAssistant() {
+    document.getElementById('googleSignIn').style.display = 'none';
+    document.getElementById('voiceAssistant').style.display = 'flex';
+    document.querySelector('.orb').style.display = 'block';
+}
+
+function showLogin() {
+    document.getElementById('googleSignIn').style.display = 'flex';
+    document.getElementById('voiceAssistant').style.display = 'none';
+    document.querySelector('.orb').style.display = 'none';
 }

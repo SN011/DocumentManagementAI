@@ -12,7 +12,6 @@ chrome.runtime.onInstalled.addListener(() => {
       }
     }).then(response => response.json())
       .then(data => {
-        // Store user information in chrome storage
         chrome.storage.local.set({ userInfo: data }, () => {
           console.log('User information stored:', data);
         });
@@ -20,5 +19,14 @@ chrome.runtime.onInstalled.addListener(() => {
       .catch(error => {
         console.error('Error:', error);
       });
+  });
+});
+
+chrome.browserAction.onClicked.addListener(() => {
+  chrome.windows.create({
+    url: chrome.runtime.getURL("popup.html"),
+    type: "popup",
+    width: 800,
+    height: 800
   });
 });

@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: realestateai-deployment
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: realestateai
+  template:
+    metadata:
+      labels:
+        app: realestateai
+    spec:
+      containers:
+        - name: realestateai
+          image: gcr.io/realestateai-doc-mgr/realestateai:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+      imagePullSecrets:
+        - name: gcr-json-key

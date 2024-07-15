@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Marvin the Orb</title>
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
 
@@ -26,13 +26,46 @@
         .container {
             width: 100%;
             height: 100%;
-            display: flex;
+            display: none;
             overflow-y: auto;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             text-align: center;
             position: relative;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #333;
+            color: white;
+            border: 1px solid #00FFFF;
+            border-radius: 5px;
+            margin: 0 5px;
+        }
+
+        .tab.active {
+            background-color: #00FFFF;
+            color: #000;
+        }
+
+        .tab-content {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .tab-content.active {
+            display: flex;
         }
 
         .orb {
@@ -78,20 +111,6 @@
 
         #response {
             margin-top: 20px;
-        }
-
-        #googleSignIn,
-        #voiceAssistant {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #voiceAssistant {
-            display: none;
         }
 
         .info-label {
@@ -197,7 +216,13 @@
 </head>
 
 <body>
-    <div id="googleSignIn" class="container">
+    <div class="tabs">
+        <div class="tab active" data-tab="googleSignIn">Google Sign-In</div>
+        <div class="tab" data-tab="voiceAssistant">Voice Assistant</div>
+        <div class="tab" data-tab="callLogs">Call Logs</div>
+    </div>
+
+    <div id="googleSignIn" class="container tab-content active">
         <h1>Welcome!</h1>
         <p id="loginPrompt">Click the button below to sign in with Google and retrieve your account details.</p>
         <button id="signInButton">Sign In with Google</button>
@@ -224,7 +249,7 @@
         </div>
     </div>
 
-    <div id="voiceAssistant" class="container">
+    <div id="voiceAssistant" class="container tab-content">
         <div class="orb"></div>
         <div class="name-tag">Marvin</div>
         <button id="talkButton">Talk to Marvin</button>
@@ -241,7 +266,34 @@
         </div>
     </div>
 
+    <div id="callLogs" class="container tab-content">
+        <h2>Call Logs</h2>
+        <div id="callLogsContainer">
+            <!-- Call logs will be appended here dynamically -->
+        </div>
+    </div>
+
     <script src="popup.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const target = tab.getAttribute('data-tab');
+
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    tabContents.forEach(tc => tc.classList.remove('active'));
+                    document.getElementById(target).classList.add('active');
+                });
+            });
+
+            restoreState();
+        });
+    </script>
 </body>
 
 </html>

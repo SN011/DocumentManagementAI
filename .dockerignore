@@ -1,15 +1,12 @@
 .venv
+.git
 __pycache__
 *.pyc
+*.pyo
+*.pyd
 
-*.crx
-final_aggregated
-drive_batches
+*.log
+*.tmp
 leetcode
-mapped_batches
-paths
-static
-templates
-test-chrome-ext
 
 

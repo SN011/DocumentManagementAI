@@ -36,7 +36,7 @@ def make_call():
     call = client.calls.create(
         to=to_phone_number,
         from_=TWILIO_PHONE_NUMBER,
-        url=f'{LOCALTUNNEL_URL}/voice?message={message}'
+        url='http://35.245.222.90/voice'
     )
     return jsonify({"status": "call initiated", "sid": call.sid})
 
@@ -59,15 +59,13 @@ def send_sms():
     )
     return jsonify({"status": "SMS sent", "sid": message.sid})
 
-@app.route('/voice', methods=['GET', 'POST'])
+@app.route('/voice', methods=['GET','POST'])
 def voice():
-    message = request.args.get('message', 'Hello! This is a call from your extension.')
     response = VoiceResponse()
-    response.say(message, voice='alice')
+    response.play(os.getenv('TTS_SYNTHESIS'))
     return str(response)
 
 if __name__ == '__main__':
-    app.run()
-
+    app.run(host="0.0.0.0", port=8080)
 
 

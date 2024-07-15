@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "realestateai-doc-mgr",
+  "private_key_id": "fceac1735f2c6e02a451038878dad311adf8d32a",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQCRqcOFIUPCsACm\nWDFXyRdMKB1RZAc2KtRm94XBAHFgz7ZMH/92c6OErYGwLCdc1N3lMf+NzddN09ca\nA8jbwAm+5f0ieGMGR4qHS42UKEY7JBxIdN7akQ5sN2DsYUMlWMH8eCnKmxHeWEwN\nN0p6ZMEZCMUWhWLDdOv15akBjD+PcoZMZPIiv6K2WD6sisXKmUDw6MjOtWisfueY\naRc4+XWKCKUeMukz73kkmeNqB0VRjAF/HocTFNgDj5kE2MCK3jjhI4ZJ32eV01Ml\n035GMV65zJLKuepp5NL/WZPC+qmAbwHE9+4e6UvWr5QhCleqYSYaOYgNTThdnN6e\n45NdJQGXAgMBAAECggEAH4EeqygfLjf/4/p2LZzuH4gbkzN1xdbsmpqVgMFWRFCY\nho1zJMztBHC8eHyMRO07UuuF8Mcg9pHHV7aS1kiKMxIuNirgjAakJRAHvpAZZIgy\nX897Nb2i52/w1B9TNPwl9LOOomX4ruTdCgy33JH3G7GEYxMVYd3jfQsfixio1J7m\nbxkqNQ2yqV8/+PVPMaBB+3qId8eb0cwDINBPIA9CAWgwzG810RnrLZdIUoyFubR/\nZxwInOeQ9fZ6pFtO0Br75EYiSxfEQnsBmitFM0q2+EtH9rWSLV+EHnM8RkVz86El\neDjXWNU7nu+FyVAWE6ByX2vJ48aI/KYFe9zeoJrsOQKBgQDHWBD6nEZzQpPk0Sai\npdm1OaRXkf7SmvS7ZrIG3tbxPZOYKpSvWMwiCv7jQpp89j/Vx13MHQlRdvwCUg+z\nor130Yi6TXf8BceHEkfCc+LtsFkannjMHsvgn0SsPwhU2Oq2jqfqiS8sp7yg9nYd\nQqGQn6T6hGxAZ2s7B/bqAvDXaQKBgQC7D/fMUgSgnBIhvSux9XwIhPfiaISQyZku\nrkDLjXcVmi1vxJjd0pUEhIsCbsRhcXaAvHMjUP62ydkjXci2lnGKDYAJ8FIDEZAZ\nPwLPQOuLxoXgp1Pk9gKtnoUQz5SOVqO+mo1kRzdWOFQzw1Z/vr7xWLIYKq0RFKco\nLv0D/Wzw/wKBgQDF3y/zY3422OZu4gEkv9YLoqzz09KLAQ9emcCrOzVGfyXrjJDM\nQStXu2xo72rkEZcpv9zmSAhA2geq0gQN/sNtlQrQSyeHfcEh3U5nwZqG715zIsyr\naQJc9Bs5ktPVTQAmuBILp6KxA8skR6DUyJgRM7aSiTHe+AkjrnM0tDiWyQKBgQCw\n52b26VHK+g4DrjzWbUvBWs56ZVGJA75D8TMBzWUjHs19d7UBgpa+0QINaOd7J6xk\nDtPsQDrCbp1U3upkEl6Jqj6+J3HHySI3XemwSrr3UuVlEZk7XJQn0VQSE91vxuvP\n46V3ggoJFfg7g64X3TICWFkElcdZ8egrDlTlIxOVzQKBgQCTz9GrUjhx9bvQhQ/N\nJ38HcBYd85fqqw3qs4tiW2HfP7D3ZhuOAd/mhpsTpbJ4fM84Bc0CRmQasrk4KC61\ndohnA+/luWJirPg49Urbnughc+fMvIAgeJrq+LC8R+Bx3/q+atX5c0VkZ1BrTmO/\n/RjZgf7QZZqyQ0RNQC7/tbLVzQ==\n-----END PRIVATE KEY-----\n",
+  "client_email": "realestateai-doc-mgr@appspot.gserviceaccount.com",
+  "client_id": "105012136420260222553",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/realestateai-doc-mgr%40appspot.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

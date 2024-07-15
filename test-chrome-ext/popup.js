@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('saveCredentialsButton').addEventListener('click', saveCredentials);
     document.getElementById('logoutButton').addEventListener('click', logout);
     document.getElementById('nextButton').addEventListener('click', () => {
-        saveState('marvin');
+        saveState('voiceAssistant');
         showAssistant();
     });
     document.getElementById('backButton').addEventListener('click', () => {
@@ -85,7 +85,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     checkLoginStatus();
+    loadCallLogs();
 });
+
+function loadCallLogs() {
+    chrome.storage.local.get('callLogs', (result) => {
+        if (result.callLogs) {
+            console.log('Call logs found in storage:', result.callLogs);
+            const callLogsContainer = document.getElementById('callLogsContainer');
+            callLogsContainer.innerHTML = '';
+            result.callLogs.forEach(log => {
+                const link = document.createElement('a');
+                link.href = log.url;
+                link.textContent = `Call from ${log.from} to ${log.to}`;
+                link.target = '_blank';
+                callLogsContainer.appendChild(link);
+                callLogsContainer.appendChild(document.createElement('br'));
+            });
+        } else {
+            console.log('No call logs found in storage');
+        }
+    });
+}
 
 function authenticateUser(token) {
     fetch('http://localhost:5000/authenticate', {
@@ -185,8 +206,8 @@ function logout() {
 function clearUserData() {
     chrome.identity.removeCachedAuthToken({ token: authToken }, () => {
         console.log('Auth token removed');
-        chrome.storage.local.remove(['userInfo', 'currentState'], () => {
-            console.log('User info and state removed from storage');
+        chrome.storage.local.remove('userInfo', () => {
+            console.log('User info removed from storage');
             // Reset the UI
             document.getElementById('userInfo').style.display = 'none';
             document.getElementById('loginPrompt').style.display = 'block';
@@ -342,10 +363,12 @@ function restoreState() {
     chrome.storage.local.get('currentState', (result) => {
         if (result.currentState) {
             console.log('Restoring state:', result.currentState);
-            if (result.currentState === 'marvin') {
+            if (result.currentState === 'voiceAssistant') {
                 showAssistant();
-            } else {
+            } else if (result.currentState === 'credentials') {
                 showLogin();
+            } else if (result.currentState === 'callLogs') {
+                showCallLogs();
             }
         } else {
             console.log('No state found, showing login page');
@@ -355,13 +378,25 @@ function restoreState() {
 }
 
 function showAssistant() {
-    document.getElementById('googleSignIn').style.display = 'none';
-    document.getElementById('voiceAssistant').style.display = 'flex';
-    document.querySelector('.orb').style.display = 'block';
+    document.querySelector('.tab.active').classList.remove('active');
+    document.querySelector('.tab-content.active').classList.remove('active');
+    document.querySelector('.tab[data-tab="voiceAssistant"]').classList.add('active');
+    document.getElementById('voiceAssistant').classList.add('active');
+    saveState('voiceAssistant');
 }
 
 function showLogin() {
-    document.getElementById('googleSignIn').style.display = 'flex';
-    document.getElementById('voiceAssistant').style.display = 'none';
-    document.querySelector('.orb').style.display = 'none';
+    document.querySelector('.tab.active').classList.remove('active');
+    document.querySelector('.tab-content.active').classList.remove('active');
+    document.querySelector('.tab[data-tab="googleSignIn"]').classList.add('active');
+    document.getElementById('googleSignIn').classList.add('active');
+    saveState('credentials');
+}
+
+function showCallLogs() {
+    document.querySelector('.tab.active').classList.remove('active');
+    document.querySelector('.tab-content.active').classList.remove('active');
+    document.querySelector('.tab[data-tab="callLogs"]').classList.add('active');
+    document.getElementById('callLogs').classList.add('active');
+    saveState('callLogs');
 }

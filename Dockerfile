@@ -25,5 +25,5 @@ COPY . .
 # Specify the command to run the app
 CMD ["python", "testing_folder/twiliotest.py"]
 
-# Expose the port the app runs on
-EXPOSE 5000
+ENV PORT=8080
+EXPOSE 8080

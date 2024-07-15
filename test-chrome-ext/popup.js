@@ -39,7 +39,7 @@ socket.on('finished_chain', () => {
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded');
-    checkLoginStatus();
+    restoreState();
 
     document.getElementById('signInButton').addEventListener('click', () => {
         console.log('Sign in button clicked');
@@ -56,8 +56,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('saveCredentialsButton').addEventListener('click', saveCredentials);
     document.getElementById('logoutButton').addEventListener('click', logout);
-    document.getElementById('nextButton').addEventListener('click', showAssistant);
-    document.getElementById('backButton').addEventListener('click', showLogin);
+    document.getElementById('nextButton').addEventListener('click', () => {
+        saveState('marvin');
+        showAssistant();
+    });
+    document.getElementById('backButton').addEventListener('click', () => {
+        saveState('credentials');
+        showLogin();
+    });
     document.getElementById('sendTextButton').addEventListener('click', handleTextInput);
     document.getElementById('textInput').addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
@@ -179,8 +185,8 @@ function logout() {
 function clearUserData() {
     chrome.identity.removeCachedAuthToken({ token: authToken }, () => {
         console.log('Auth token removed');
-        chrome.storage.local.remove('userInfo', () => {
-            console.log('User info removed from storage');
+        chrome.storage.local.remove(['userInfo', 'currentState'], () => {
+            console.log('User info and state removed from storage');
             // Reset the UI
             document.getElementById('userInfo').style.display = 'none';
             document.getElementById('loginPrompt').style.display = 'block';
@@ -324,6 +330,28 @@ function fetchAudioResponse() {
         .catch(error => {
             console.error('Error:', error);
         });
+}
+
+function saveState(state) {
+    chrome.storage.local.set({ currentState: state }, () => {
+        console.log('State saved:', state);
+    });
+}
+
+function restoreState() {
+    chrome.storage.local.get('currentState', (result) => {
+        if (result.currentState) {
+            console.log('Restoring state:', result.currentState);
+            if (result.currentState === 'marvin') {
+                showAssistant();
+            } else {
+                showLogin();
+            }
+        } else {
+            console.log('No state found, showing login page');
+            showLogin();
+        }
+    });
 }
 
 function showAssistant() {

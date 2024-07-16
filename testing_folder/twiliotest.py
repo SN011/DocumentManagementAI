@@ -9,12 +9,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Twilio credentials
-TWILIO_ACCOUNT_SID = os.getenv('ACe8c50574c97a43bfdabe4578b752ee70')
-TWILIO_AUTH_TOKEN = os.getenv('112df46bf373680765b20e64230c92c0')
-TWILIO_PHONE_NUMBER = os.getenv('+18449134303')
-
-# Localtunnel URL (replace with your actual Localtunnel URL)
-TTS_SYNTHESIS_URL = os.getenv('TTS_SYNTHESIS_URL')
+TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
+TWILIO_PHONE_NUMBER = os.getenv('TWILIO_PHONE_NUMBER')
 
 # Initialize the Twilio client
 client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
@@ -36,7 +33,7 @@ def make_call():
     call = client.calls.create(
         to=to_phone_number,
         from_=TWILIO_PHONE_NUMBER,
-        url='http://35.245.222.90/voice'
+        url='http://34.68.19.99/voice'
     )
     return jsonify({"status": "call initiated", "sid": call.sid})
 
@@ -59,21 +56,11 @@ def send_sms():
     )
     return jsonify({"status": "SMS sent", "sid": message.sid})
 
-# @app.route('/voice', methods=['GET','POST'])
-# def voice():
-#     response = VoiceResponse()
-#     response.play(TTS_SYNTHESIS_URL)
-#     return str(response)
 @app.route('/voice', methods=['GET', 'POST'])
 def voice():
+    message = request.args.get('message', 'Hello! This is a call from your extension.')
     response = VoiceResponse()
-    tts_synthesis_url = os.getenv('TTS_SYNTHESIS_URL', f'https://storage.googleapis.com/tts-synthesis-bucket/synthesis.mp3')
-
-    if not tts_synthesis_url:
-        response.say("Sorry, there was an error with the audio file.", voice='alice')
-    else:
-        response.play(tts_synthesis_url)
-
+    response.say(message, voice='alice')
     return str(response)
 
 if __name__ == '__main__':

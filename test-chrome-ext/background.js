@@ -9,7 +9,7 @@ chrome.runtime.onInstalled.addListener(() => {
       console.error(chrome.runtime.lastError);
       return;
     }
-    fetch('http://localhost:5000/authenticate', {
+    fetch('http://34.68.19.99/authenticate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

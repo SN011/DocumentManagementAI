@@ -18,5 +18,67 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
+          resources:
+            requests:
+              memory: "4Gi"
+              cpu: "4000m"
+              ephemeral-storage: "10Gi"
+            limits:
+              memory: "8Gi"
+              cpu: "8000m"
+              ephemeral-storage: "20Gi"
+          env:
+            - name: SERVICE_ACCOUNT_PATH
+              value: "/paths/realestateai-doc-mgr-3a0e2f411c8d.json"
+            - name: STORAGE_SERVICE_ACCOUNT
+              value: "/paths/realestateai-doc-mgr-fceac1735f2c.json"
+            - name: CREDENTIALS_PATH
+              value: "/paths/client_secret_291175256673-gr5p5vf3pi2h0m46h5qnd3ila4iitfqs.apps.googleusercontent.com.json"
+            - name: AUDIO_PATH
+              value: "/paths/output.wav"
+            - name: TTS_SYNTHESIS
+              value: "/paths/synthesis.mp3"
+            - name: TWILIO_ACCOUNT_SID
+              value: "ACfbd0b087e41fd42be2593fafbf8cc56f"
+            - name: TWILIO_AUTH_TOKEN
+              value: "b1009be1aed2f34db2b8167050e74b4a"
+            - name: TWILIO_PHONE_NUMBER
+              value: "+18559601391"
+            - name: TTS_SYNTHESIS_URL
+              value: "https://storage.googleapis.com/tts-synthesis-bucket/synthesis.mp3"
+            - name: PORT
+              value: "8080"
+          volumeMounts:
+            - name: service-account-storage
+              mountPath: "/paths/realestateai-doc-mgr-fceac1735f2c.json"
+              subPath: realestateai-doc-mgr-fceac1735f2c.json
+            - name: service-account-doc-mgr
+              mountPath: "/paths/realestateai-doc-mgr-3a0e2f411c8d.json"
+              subPath: realestateai-doc-mgr-3a0e2f411c8d.json
+            - name: client-secret
+              mountPath: "/paths/client_secret_291175256673-gr5p5vf3pi2h0m46h5qnd3ila4iitfqs.apps.googleusercontent.com.json"
+              subPath: client_secret_291175256673-gr5p5vf3pi2h0m46h5qnd3ila4iitfqs.apps.googleusercontent.com.json
+            - name: audio-file
+              mountPath: "/paths/output.wav"
+              subPath: output.wav
+            - name: tts-synthesis-file
+              mountPath: "/paths/synthesis.mp3"
+              subPath: synthesis.mp3
+      volumes:
+        - name: service-account-storage
+          secret:
+            secretName: gcr-storage-json-key
+        - name: service-account-doc-mgr
+          secret:
+            secretName: gcr-json-key
+        - name: client-secret
+          secret:
+            secretName: gcr-json-key
+        - name: audio-file
+          secret:
+            secretName: gcr-json-key
+        - name: tts-synthesis-file
+          secret:
+            secretName: gcr-json-key
       imagePullSecrets:
         - name: gcr-json-key

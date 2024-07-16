@@ -14,7 +14,7 @@ TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
 TWILIO_PHONE_NUMBER = os.getenv('TWILIO_PHONE_NUMBER')
 
 # Localtunnel URL (replace with your actual Localtunnel URL)
-LOCALTUNNEL_URL = os.getenv('LOCALTUNNEL_URL')
+TTS_SYNTHESIS_URL = os.getenv('TTS_SYNTHESIS_URL')
 
 # Initialize the Twilio client
 client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
@@ -59,10 +59,21 @@ def send_sms():
     )
     return jsonify({"status": "SMS sent", "sid": message.sid})
 
-@app.route('/voice', methods=['GET','POST'])
+# @app.route('/voice', methods=['GET','POST'])
+# def voice():
+#     response = VoiceResponse()
+#     response.play(TTS_SYNTHESIS_URL)
+#     return str(response)
+@app.route('/voice', methods=['GET', 'POST'])
 def voice():
     response = VoiceResponse()
-    response.play(os.getenv('TTS_SYNTHESIS'))
+    tts_synthesis_url = os.getenv('TTS_SYNTHESIS_URL', f'https://storage.googleapis.com/tts-synthesis-bucket/synthesis.mp3')
+
+    if not tts_synthesis_url:
+        response.say("Sorry, there was an error with the audio file.", voice='alice')
+    else:
+        response.play(tts_synthesis_url)
+
     return str(response)
 
 if __name__ == '__main__':

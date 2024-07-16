@@ -12,18 +12,19 @@ RUN apt-get update && apt-get install -y \
     libasound2-dev \
     portaudio19-dev \
     && apt-get clean 
+    
 
 # Copy the requirements.txt file into the container
 COPY requirements.txt requirements.txt
 
 # Install the dependencies
 RUN pip install --no-cache-dir -r requirements.txt
-
+RUN pip install --upgrade transformers
 # Copy the rest of the application code into the container
 COPY . .
 
 # Specify the command to run the app
-CMD ["python", "testing_folder/twiliotest.py"]
+CMD ["python", "twiliophoneflask.py"]
 
 ENV PORT=8080
 EXPOSE 8080

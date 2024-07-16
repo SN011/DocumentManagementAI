@@ -229,7 +229,7 @@ class GmailSendPdfTool(BaseTool):
     def _run(self, sender_email: str, recipient_email: str, subject: str, body: str, pdf_path: str = None, **kwargs):
         """Run the tool to send the email with the optional PDF attachment."""
         result = self.send_email(sender_email, recipient_email, subject, body, pdf_path)
-        return f"Email sent successfully with message ID {result["id"]}. YOU ARE DONNNNEEEEEEEEEEEEE!!!!!!!! TOOL EXECUTED SUCCESSFULLY!!!!!!!!!!!!!" if result else "Failed to send email."
+        return f'Email sent successfully with message ID {result["id"]}. YOU ARE DONNNNEEEEEEEEEEEEE!!!!!!!! TOOL EXECUTED SUCCESSFULLY!!!!!!!!!!!!!' if result else "Failed to send email."
 
     def _arun(self):
         raise NotImplementedError("This tool does not support asynchronous operation yet.")

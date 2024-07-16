@@ -9,9 +9,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Twilio credentials
-TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
-TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
-TWILIO_PHONE_NUMBER = os.getenv('TWILIO_PHONE_NUMBER')
+TWILIO_ACCOUNT_SID = os.getenv('ACe8c50574c97a43bfdabe4578b752ee70')
+TWILIO_AUTH_TOKEN = os.getenv('112df46bf373680765b20e64230c92c0')
+TWILIO_PHONE_NUMBER = os.getenv('+18449134303')
 
 # Localtunnel URL (replace with your actual Localtunnel URL)
 TTS_SYNTHESIS_URL = os.getenv('TTS_SYNTHESIS_URL')
@@ -78,5 +78,3 @@ def voice():
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=8080)
-
-

@@ -25,13 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // document.getElementById('logout').addEventListener('click', () => {
-    //     chrome.identity.removeCachedAuthToken({ token: chrome.identity.getAuthToken }, () => {
-    //         console.log('Logged out');
-    //         chrome.storage.local.remove('userInfo');
-    //         checkLoginStatus();
-    //     });
-    // });djjdj
+    
 
     document.getElementById('logout').addEventListener('click', () => {
         chrome.identity.getAuthToken({ interactive: false }, (token) => {

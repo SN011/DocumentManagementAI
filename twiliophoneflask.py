@@ -131,6 +131,22 @@ from twilio.rest import Client
 from twilio.twiml.voice_response import VoiceResponse, Gather
 import aiofiles
 
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s [%(threadName)s] %(levelname)s: %(message)s',
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger(__name__)
+
+app = Flask(__name__)
+CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+chat_history = ConversationSummaryBufferMemory(llm=llm, max_token_limit=200)
+
+BUCKET_NAME = 'tts-synthesis-bucket'
+
 credentials_path = os.getenv('CREDENTIALS_PATH')
 tts_service_acct_path = os.getenv('SERVICE_ACCOUNT_PATH')
 audio_path = os.getenv('AUDIO_PATH')
@@ -156,6 +172,8 @@ my_tools = [
     AppointmentBookingCalendarTool(credentials_path),
 ]
 
+
+import queue
 human_response_queue = queue.Queue()
 
 def prompt_func(prompt):
@@ -179,20 +197,7 @@ my_tools.append(human_tool)
 
 llm.groq_api_key = random.choice(tools.initialize_groq.api_keys)
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s [%(threadName)s] %(levelname)s: %(message)s',
-    handlers=[logging.StreamHandler()]
-)
-logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
-CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
-
-chat_history = ConversationSummaryBufferMemory(llm=llm, max_token_limit=200)
-
-BUCKET_NAME = 'tts-synthesis-bucket'
 
 # Define agent and executor
 search_agent = create_structured_chat_agent(llm, my_tools, prompt)
@@ -317,17 +322,17 @@ def fetch_recording():
 
 
 # Additional functions for AI response and transcription
-async def transcribe_audio(audio_url):
-    response = requests.get(audio_url)
-    audio_path = 'downloaded_audio.wav'
+# async def transcribe_audio(audio_url):
+#     response = requests.get(audio_url)
+#     audio_path = 'downloaded_audio.wav'
     
-    with open(audio_path, 'wb') as f:
-        f.write(response.content)
+#     with open(audio_path, 'wb') as f:
+#         f.write(response.content)
 
-    result = model.transcribe(audio_path)
-    transcription = result['text']
-    logger.debug(f'Audio transcription completed: {transcription}')
-    return transcription
+#     result = model.transcribe(audio_path)
+#     transcription = result['text']
+#     logger.debug(f'Audio transcription completed: {transcription}')
+#     return transcription
 
 async def ai_response(transcription: str):
     llm.groq_api_key = random.choice(tools.initialize_groq.api_keys)    

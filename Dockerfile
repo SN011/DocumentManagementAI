@@ -4,6 +4,7 @@ FROM python:3.10-slim
 # Set the working directory in the container
 WORKDIR /app
 
+COPY paths /paths
 
 # Install build tools and system dependencies
 RUN apt-get update && apt-get install -y \
@@ -24,7 +25,7 @@ RUN pip install --upgrade transformers
 COPY . .
 
 # Specify the command to run the app
-CMD ["python", "twilioflaskphone.py"]
+CMD ["python", "twiliophoneflask.py"]
 
 ENV PORT=8080
 EXPOSE 8080

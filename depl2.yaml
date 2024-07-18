@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: realestateai-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: realestateai
+  template:
+    metadata:
+      labels:
+        app: realestateai
+    spec:
+      containers:
+      - name: realestateai
+        image: gcr.io/realestateai-doc-mgr/realestateai:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: PORT
+          value: "8080"

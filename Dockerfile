@@ -24,7 +24,7 @@ RUN pip install --upgrade transformers
 COPY . .
 
 # Specify the command to run the app
-CMD ["python", "testing_folder/twiliotest.py"]
+CMD ["python", "twilioflaskphone.py"]
 
 ENV PORT=8080
 EXPOSE 8080

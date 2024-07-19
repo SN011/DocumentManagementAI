@@ -9,7 +9,7 @@ chrome.runtime.onInstalled.addListener(() => {
       console.error(chrome.runtime.lastError);
       return;
     }
-    fetch('http://localhost:5000/authenticate', {
+    fetch('http://35.185.35.162/authenticate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -17,10 +17,14 @@ chrome.runtime.onInstalled.addListener(() => {
       }
     }).then(response => response.json())
       .then(data => {
-        // Store user information in chrome storage
-        chrome.storage.local.set({ userInfo: data }, () => {
-          console.log('User information stored:', data);
-        });
+        if (data.auth_url) {
+          chrome.tabs.create({ url: data.auth_url });
+        } else {
+          // Store user information in chrome storage
+          chrome.storage.local.set({ userInfo: data }, () => {
+            console.log('User information stored:', data);
+          });
+        }
       })
       .catch(error => {
         console.error('Error:', error);

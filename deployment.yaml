@@ -73,3 +73,4 @@ spec:
             secretName: gcr-json-key
       imagePullSecrets:
         - name: gcr-json-key
+        - name: gcr-storage-json-key

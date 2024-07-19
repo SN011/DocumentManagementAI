@@ -1,6 +1,6 @@
 import os
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
+from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 from dotenv import load_dotenv
 
@@ -16,6 +16,11 @@ SCOPES = [
 
 CREDENTIALS_PATH = os.getenv('CREDENTIALS_PATH')
 TOKEN_PATH = 'paths/token.json'
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+def get_auth_flow():
+    return Flow.from_client_secrets_file(
+        CREDENTIALS_PATH, scopes=SCOPES,
+        redirect_uri='http://35.185.35.162/oauth2callback')
 
 def authenticate():
     creds = None
@@ -34,13 +39,8 @@ def authenticate():
                 os.remove(TOKEN_PATH)  # Delete the token file if refresh fails
                 creds = None  # Set creds to None to initiate a new OAuth flow
         if not creds:
-            flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_PATH, SCOPES)
-            creds = flow.run_local_server(port=0)
-            with open(TOKEN_PATH, 'w') as token_file:
-                token_file.write(creds.to_json())
+            flow = get_auth_flow()
+            auth_url, _ = flow.authorization_url(prompt='consent')
+            return auth_url
 
     return creds
-
-# Ensure no default credentials are being used
-if 'GOOGLE_APPLICATION_CREDENTIALS' in os.environ:
-    del os.environ['GOOGLE_APPLICATION_CREDENTIALS']

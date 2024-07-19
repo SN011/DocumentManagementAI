@@ -108,7 +108,7 @@ load_dotenv()
 from tools.imports import *
 vectors = FAISS.load_local('./vector_db', embeddings=HuggingFaceEmbeddings(), allow_dangerous_deserialization=True)
 
-from flask import Flask, request, jsonify, render_template, send_file
+from flask import Flask, request, jsonify, render_template, send_file, redirect, url_for, session
 from io import BytesIO
 import whisper
 from google.cloud import texttospeech
@@ -131,7 +131,6 @@ from twilio.rest import Client
 from twilio.twiml.voice_response import VoiceResponse, Gather
 import aiofiles
 
-
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s [%(threadName)s] %(levelname)s: %(message)s',
@@ -143,6 +142,7 @@ app = Flask(__name__)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+app.secret_key = 'your_secret_key'
 chat_history = ConversationSummaryBufferMemory(llm=llm, max_token_limit=200)
 
 BUCKET_NAME = 'tts-synthesis-bucket'
@@ -158,20 +158,7 @@ tts_client = texttospeech.TextToSpeechClient.from_service_account_file(tts_servi
 # Initialize Twilio client
 twilio_client = Client(os.getenv('TWILIO_ACCOUNT_SID'), os.getenv('TWILIO_AUTH_TOKEN'))
 
-my_tools = [
-    GoogleDocWriteTool(credentials_path),
-    GoogleSheetsUpdateTool(credentials_path),
-    GoogleSheetsCreateTool(credentials_path),
-    GoogleDriveRenameTool(credentials_path),
-    GmailSendPdfTool(credentials_path),
-    MoveFileTool(credentials_path),
-    CreateFolderTool(credentials_path),
-    FolderMovementTool(credentials_path),
-    FileOrganizerTool(credentials_path),
-    ImprovedSearchTool(credentials_path),
-    AppointmentBookingCalendarTool(credentials_path),
-]
-
+my_tools = []
 
 import queue
 human_response_queue = queue.Queue()
@@ -193,24 +180,42 @@ def handle_human_input(data):
     socketio.emit('human_input_received', {'status': 'received'})
 
 human_tool = HumanInputRun(prompt_func=prompt_func, input_func=input_func)
-my_tools.append(human_tool)
+
+def initialize_tools(credentials_path):
+    global my_tools
+    my_tools = [
+        GoogleDocWriteTool(credentials_path),
+        GoogleSheetsUpdateTool(credentials_path),
+        GoogleSheetsCreateTool(credentials_path),
+        GoogleDriveRenameTool(credentials_path),
+        GmailSendPdfTool(credentials_path),
+        MoveFileTool(credentials_path),
+        CreateFolderTool(credentials_path),
+        FolderMovementTool(credentials_path),
+        FileOrganizerTool(credentials_path),
+        ImprovedSearchTool(credentials_path),
+        AppointmentBookingCalendarTool(credentials_path),
+        human_tool,
+    ]
 
 llm.groq_api_key = random.choice(tools.initialize_groq.api_keys)
 
-
-
 # Define agent and executor
-search_agent = create_structured_chat_agent(llm, my_tools, prompt)
-agent_executor = AgentExecutor(
-    agent=search_agent,
-    tools=my_tools,
-    verbose=True,
-    handle_parsing_errors=True,
-    return_intermediate_steps=True,
-    memory=chat_history
-)
+search_agent = None
+agent_executor = None
 
-# Flask routes
+def setup_agent_and_executor():
+    global search_agent, agent_executor
+    search_agent = create_structured_chat_agent(llm, my_tools, prompt)
+    agent_executor = AgentExecutor(
+        agent=search_agent,
+        tools=my_tools,
+        verbose=True,
+        handle_parsing_errors=True,
+        return_intermediate_steps=True,
+        memory=chat_history
+    )
+
 @app.route('/set_credentials', methods=['POST'])
 def set_credentials():
     global credentials
@@ -234,8 +239,33 @@ def index():
 def voice_assistant():
     return render_template('index2.html')
 
+# @app.route('/authenticate', methods=['POST'])
+# def authenticate():
+#     auth_header = request.headers.get('Authorization')
+#     token = auth_header.split(' ')[1] if auth_header else None
+
+#     if not token:
+#         return jsonify({'error': 'Missing token'}), 400
+
+#     response = requests.get(
+#         'https://www.googleapis.com/oauth2/v3/userinfo',
+#         headers={'Authorization': f'Bearer ' + token}
+#     )
+
+#     if response.status_code != 200:
+#         return jsonify({'error': 'Failed to fetch user info'}, response.status_code)
+
+#     user_info = response.json()
+
+#     # Initialize tools and agent after successful authentication
+#     initialize_tools(credentials_path)
+#     setup_agent_and_executor()
+
+#     return jsonify(user_info), 200
+
+from tools.auth import authenticate, get_auth_flow
 @app.route('/authenticate', methods=['POST'])
-def authenticate():
+def authenticate_user():
     auth_header = request.headers.get('Authorization')
     token = auth_header.split(' ')[1] if auth_header else None
 
@@ -244,14 +274,40 @@ def authenticate():
 
     response = requests.get(
         'https://www.googleapis.com/oauth2/v3/userinfo',
-        headers={'Authorization': f'Bearer {token}'}
+        headers={'Authorization': 'Bearer ' + token}
     )
 
     if response.status_code != 200:
         return jsonify({'error': 'Failed to fetch user info'}, response.status_code)
 
     user_info = response.json()
+
+    # Start OAuth flow and return URL
+    auth_url = authenticate()
+    if isinstance(auth_url, str):
+        session['user_info'] = user_info
+        return jsonify({'auth_url': auth_url})
+
+    # Initialize tools and agent after successful authentication
+    initialize_tools(credentials_path)
+    setup_agent_and_executor()
+
     return jsonify(user_info), 200
+
+@app.route('/oauth2callback')
+def oauth2callback():
+    flow = get_auth_flow()
+    flow.fetch_token(authorization_response=request.url)
+    
+    creds = flow.credentials
+    with open('paths/token.json', 'w') as token_file:
+        token_file.write(creds.to_json())
+
+    # Initialize tools and agent after obtaining credentials
+    initialize_tools(credentials_path)
+    setup_agent_and_executor()
+
+    return redirect(url_for('index'))
 
 @app.route('/talk', methods=['POST'])
 async def talk():
@@ -320,20 +376,7 @@ def fetch_recording():
         logger.error(f'Error fetching recording: {e}', exc_info=True)
         return jsonify({'error': 'Error fetching recording'}), 500
 
-
 # Additional functions for AI response and transcription
-# async def transcribe_audio(audio_url):
-#     response = requests.get(audio_url)
-#     audio_path = 'downloaded_audio.wav'
-    
-#     with open(audio_path, 'wb') as f:
-#         f.write(response.content)
-
-#     result = model.transcribe(audio_path)
-#     transcription = result['text']
-#     logger.debug(f'Audio transcription completed: {transcription}')
-#     return transcription
-
 async def ai_response(transcription: str):
     llm.groq_api_key = random.choice(tools.initialize_groq.api_keys)    
     logger.debug(f'Generating AI response for transcription: {transcription}')
@@ -437,9 +480,6 @@ async def handle_response_with_agents(response):
     await chat_history.asave_context({"input": response}, {"output": final_response})
     prompt_func(final_response)  # Use Alice voice to speak the final response
     return final_response
-
-
-
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=8080)

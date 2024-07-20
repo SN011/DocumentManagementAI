@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function fetchCallLogs() {
     try {
-        const response = await fetch('http://localhost:8080/fetch-call-logs');
+        const response = await fetch('http://35.185.35.162/fetch-call-logs');
         const data = await response.json();
 
         if (response.ok) {
@@ -121,7 +121,7 @@ function formatCallTime(dateString) {
 }
 
 function authenticateUser(token) {
-    fetch('http://localhost:8080/authenticate', {
+    fetch('http://35.185.35.162/authenticate', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -129,7 +129,6 @@ function authenticateUser(token) {
         }
     }).then(response => response.json())
         .then(data => {
-            console.log(data);
             chrome.storage.local.get(['phoneNumber', 'recEmail'], (result) => {
                 data.phone = result.phoneNumber || '';
                 data.recemail = result.recEmail || '';
@@ -139,7 +138,7 @@ function authenticateUser(token) {
             });
         })
         .catch(error => {
-            console.error('Error fetching user data: ', error);
+            console.error('Error fetching user data:', error);
         });
 }
 

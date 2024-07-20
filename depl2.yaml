@@ -15,6 +15,7 @@ spec:
       containers:
       - name: realestateai
         image: gcr.io/realestateai-doc-mgr/realestateai:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 8080
         env:

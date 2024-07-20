@@ -151,6 +151,7 @@ credentials_path = os.getenv('CREDENTIALS_PATH')
 tts_service_acct_path = os.getenv('SERVICE_ACCOUNT_PATH')
 audio_path = os.getenv('AUDIO_PATH')
 tts_synthesis_path = os.getenv('TTS_SYNTHESIS')
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 # Initialize Google TTS client
 tts_client = texttospeech.TextToSpeechClient.from_service_account_file(tts_service_acct_path)
@@ -239,31 +240,9 @@ def index():
 def voice_assistant():
     return render_template('index2.html')
 
-# @app.route('/authenticate', methods=['POST'])
-# def authenticate():
-#     auth_header = request.headers.get('Authorization')
-#     token = auth_header.split(' ')[1] if auth_header else None
 
-#     if not token:
-#         return jsonify({'error': 'Missing token'}), 400
+from tools.auth import authenticate, get_auth_flow, save_credentials
 
-#     response = requests.get(
-#         'https://www.googleapis.com/oauth2/v3/userinfo',
-#         headers={'Authorization': f'Bearer ' + token}
-#     )
-
-#     if response.status_code != 200:
-#         return jsonify({'error': 'Failed to fetch user info'}, response.status_code)
-
-#     user_info = response.json()
-
-#     # Initialize tools and agent after successful authentication
-#     initialize_tools(credentials_path)
-#     setup_agent_and_executor()
-
-#     return jsonify(user_info), 200
-
-from tools.auth import authenticate, get_auth_flow
 @app.route('/authenticate', methods=['POST'])
 def authenticate_user():
     auth_header = request.headers.get('Authorization')

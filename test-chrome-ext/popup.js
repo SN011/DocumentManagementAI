@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function fetchCallLogs() {
     try {
-        const response = await fetch('http://35.185.35.162/fetch-call-logs');
+        const response = await fetch('http://35.230.77.106/fetch-call-logs');
         const data = await response.json();
 
         if (response.ok) {
@@ -121,7 +121,7 @@ function formatCallTime(dateString) {
 }
 
 function authenticateUser(token) {
-    fetch('http://35.185.35.162/authenticate', {
+    fetch('http://35.230.77.106/authenticate', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

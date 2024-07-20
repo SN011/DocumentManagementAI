@@ -3,7 +3,7 @@ from tools.file_mgmt_tools import FileOrganizerTool, MoveFileTool, CreateFolderT
 from tools.document_tools import GoogleDocWriteTool
 from tools.miscellaneous_mgmt import GmailSendPdfTool, GoogleSheetsUpdateTool, GoogleSheetsCreateTool, AppointmentBookingCalendarTool
 from dotenv import load_dotenv
-client, llm = init_groq()
+client,llm = init_groq()
 
 from google.cloud import texttospeech
 from langchain.prompts import (
@@ -102,11 +102,16 @@ prompt = ChatPromptTemplate(
     ]
 )
 
+
+import os
+import random
+
 from HVACUtils import initialize_web_search_agent, initialize_quote_bot, run_quote_logics, vector_embedding, initialize_pdf_search_agent
 load_dotenv()
 
 from tools.imports import *
-vectors = FAISS.load_local('./vector_db', embeddings=HuggingFaceEmbeddings(), allow_dangerous_deserialization=True)
+vectors = FAISS.load_local('./vector_db',embeddings=HuggingFaceEmbeddings(),allow_dangerous_deserialization=True)
+
 
 from flask import Flask, request, jsonify, render_template, send_file, redirect, url_for, session
 from io import BytesIO
@@ -163,9 +168,27 @@ my_tools = []
 import queue
 human_response_queue = queue.Queue()
 
+# def prompt_func(prompt):
+#     response = VoiceResponse()
+#     response.say(prompt, voice='alice')
+#     return str(response)
+
 def prompt_func(prompt):
     response = VoiceResponse()
     response.say(prompt, voice='alice')
+
+    gather = Gather(
+        input='speech',
+        action='/talk',
+        method='POST',
+        timeout=5,  # Adjust timeout for how long to wait for speech input
+        speech_timeout='auto',  # Automatically stop gathering when user stops speaking
+        max_speech_time=60,  # Maximum duration of speech input
+        language='en-US',
+        barge_in=True
+    )
+    response.append(gather)
+
     return str(response)
 
 def input_func():
@@ -309,6 +332,27 @@ def oauth2callback():
 
     return redirect(url_for('index'))
 
+# @app.route('/talk', methods=['POST'])
+# async def talk():
+#     logging.debug(f"Received gather input: {request.form}")
+#     speech_result = request.form.get('SpeechResult')
+
+#     if not speech_result:
+#         logging.error("No speech result provided.")
+#         return jsonify({"error": "No speech result provided"}), 400
+
+#     transcription = speech_result
+#     logging.debug(f"Speech transcription: {transcription}")
+
+#     logging.debug('Generating AI response...')
+#     ai_resp = await ai_response(transcription)
+#     logging.debug(f'AI response generated: {ai_resp}')
+    
+#     # response = VoiceResponse()
+#     # response.say(ai_resp, voice='alice')
+    
+#     return str(ai_resp), 200
+
 @app.route('/talk', methods=['POST'])
 async def talk():
     logging.debug(f"Received gather input: {request.form}")
@@ -327,7 +371,19 @@ async def talk():
     
     response = VoiceResponse()
     response.say(ai_resp, voice='alice')
-    
+
+    gather = Gather(
+        input='speech',
+        action='/talk',
+        method='POST',
+        timeout=10,
+        speech_timeout='auto',
+        max_speech_time=60,
+        language='en-US',
+        barge_in=True
+    )
+    response.append(gather)
+
     return str(response), 200
 
 @app.route('/voice', methods=['GET', 'POST'])
@@ -335,8 +391,19 @@ def voice():
     logging.debug(f"Received call webhook: {request.form}")
     response = VoiceResponse()
 
-    gather = Gather(input='speech', action='/talk', method='POST')
+    gather = Gather(
+        input='speech',
+        action='/talk',
+        method='POST',
+        timeout=30,  # Allows sufficient time for the user to finish speaking
+        speech_timeout='auto',  # Immediate response after the user stops speaking
+        max_speech_time=60,  # Adjust as necessary for the expected duration of user input
+        language='en-US',  # Ensures speech recognition is in the correct language
+        barge_in=True  # Allows the user to interrupt and start speaking anytime
+    )
+
     response.append(gather)
+    
 
     return str(response), 200
 
@@ -428,6 +495,7 @@ async def ai_response(transcription: str):
     )
 
     response = chat_completion.choices[0].message.content
+    
     logger.debug(f'AI response generated: {response}')
     
     await chat_history.asave_context({"input": transcription}, {"output": response})
@@ -481,5 +549,8 @@ async def handle_response_with_agents(response):
     prompt_func(final_response)  # Use Alice voice to speak the final response
     return final_response
 
+# if __name__ == '__main__':
+#     socketio.run(app, host='0.0.0.0', port=8080)
+
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=8080)
+    socketio.run(app,host='0.0.0.0',port=8080)

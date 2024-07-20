@@ -181,11 +181,12 @@ def prompt_func(prompt):
         input='speech',
         action='/talk',
         method='POST',
-        timeout=5,  # Adjust timeout for how long to wait for speech input
+        timeout=30,  # Adjust timeout for how long to wait for speech input
         speech_timeout='auto',  # Automatically stop gathering when user stops speaking
-        max_speech_time=60,  # Maximum duration of speech input
+        max_speech_time=120,  # Maximum duration of speech input
         language='en-US',
-        barge_in=True
+        barge_in=True,
+        action_on_empty_result=True,
     )
     response.append(gather)
 
@@ -376,11 +377,12 @@ async def talk():
         input='speech',
         action='/talk',
         method='POST',
-        timeout=10,
-        speech_timeout='auto',
-        max_speech_time=60,
+        timeout=30,  # Adjust timeout for how long to wait for speech input
+        speech_timeout='auto',  # Automatically stop gathering when user stops speaking
+        max_speech_time=120,  # Maximum duration of speech input
         language='en-US',
-        barge_in=True
+        barge_in=True,
+        action_on_empty_result=True,
     )
     response.append(gather)
 
@@ -395,11 +397,12 @@ def voice():
         input='speech',
         action='/talk',
         method='POST',
-        timeout=30,  # Allows sufficient time for the user to finish speaking
-        speech_timeout='auto',  # Immediate response after the user stops speaking
-        max_speech_time=60,  # Adjust as necessary for the expected duration of user input
-        language='en-US',  # Ensures speech recognition is in the correct language
-        barge_in=True  # Allows the user to interrupt and start speaking anytime
+        timeout=30,  # Adjust timeout for how long to wait for speech input
+        speech_timeout='auto',  # Automatically stop gathering when user stops speaking
+        max_speech_time=120,  # Maximum duration of speech input
+        language='en-US',
+        barge_in=True,
+        action_on_empty_result=True,
     )
 
     response.append(gather)
@@ -518,7 +521,7 @@ async def ai_response(transcription: str):
         response = f"Can you please put this quote into a google doc [{corrected_quote_result}], move it to the folder called 'HVAC Quote Documents'. Then, put all the appointment related stuff and the link to the quote document into calendar (appointment calendar tool). PLEASE FOLLOW THE DIRECTIONS!!"
         task2 = asyncio.create_task(handle_response_with_agents(response))
         text = await task2
-        prompt_func(text)  # Use Alice voice to speak the AI response
+        prompt_func(text)  
         
     return response
 

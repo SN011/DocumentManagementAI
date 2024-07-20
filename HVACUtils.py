@@ -318,7 +318,7 @@ async def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: ConversationS
                 
                 {
                     "role": "user",
-                    "content": "You are a professional HVAC TECHNICAL consultant for Walter HVAC Services located in Chantilly Virginia. Based on the chat history, create a streamlined material plan for the user's HVAC quote request, choosing what materials to use, and how much would be used and where. MAKE SURE TO BE VERY SPECIFIC in what materials you will use and how much. ALSO MAKE SURE TO PROVIDE A BLURB AT THE START OF THE RESPONSE And THEN A MATERIAL LIST AND HOW MUCH YOU WILL NEEED. DO NOT LIST PRICES JUST LIST MATERIALS NEEDED AND HOW MUCH OF THAT MATERIAL" + "\nHere is the chat history: " + "[" + chat_history + "]"
+                    "content": "You are a professional HVAC TECHNICAL consultant for Walter HVAC Services located in Chantilly Virginia. Based on the chat history, create a streamlined material plan for the user's HVAC quote request, choosing what materials to use, and how much would be used and where. MAKE SURE TO BE VERY SPECIFIC in what materials you will use and how much. ALSO MAKE SURE TO PROVIDE A BLURB AT THE START OF THE RESPONSE And THEN A MATERIAL LIST AND HOW MUCH YOU WILL NEEED. DO NOT LIST PRICES JUST LIST MATERIALS NEEDED AND HOW MUCH OF THAT MATERIAL" + "\nHere is the chat history: " + "[" + chat_history.buffer + "]"
 
                 }
             ],
@@ -343,7 +343,7 @@ async def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: ConversationS
                     "content": "Based on the chat history as well as the consultors list of materials, you must put all the required\
                           information for the HVAC quote (along with location of property) into a streamlined format so that a web search query \
                             can be formed for it. Your response must be well-formed and include all details EVEN THE EXPLICIT ADDRESSS!!. \
-                                List every item explicitly. INCLUDE ADDRESS OF CLIENT AT ALL TIMES!!!! IT IS IN CHAT HISTORY!!" + "Chat History for your own context and info: [" + (chat_history) + "] AND THE Consultors List: []" + str(consultors_list) + ']'
+                                List every item explicitly. INCLUDE ADDRESS OF CLIENT AT ALL TIMES!!!! IT IS IN CHAT HISTORY!!" + "Chat History for your own context and info: [" + (chat_history.buffer) + "] AND THE Consultors List: []" + str(consultors_list) + ']'
                 }
             ],
             model="llama3-70b-8192",

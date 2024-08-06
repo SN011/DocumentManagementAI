@@ -14,7 +14,7 @@ SCOPES = [
     'https://www.googleapis.com/auth/calendar',
 ]
 
-CREDENTIALS_PATH = os.getenv('CREDENTIALS_PATH')
+CREDENTIALS_PATH = os.getenv('OLD_CREDENTIALS_PATH')
 TOKEN_PATH = 'paths/token.json'
 
 def authenticate():

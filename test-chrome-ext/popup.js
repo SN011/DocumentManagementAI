@@ -4,6 +4,7 @@ let isPlaying = false;
 let isHumanToolRequest = false;
 
 let socket = io('http://localhost:5000');
+let socket2 = io('http://localhost:5001')
 
 socket.on('connect', () => {
     console.log('Connected to server');

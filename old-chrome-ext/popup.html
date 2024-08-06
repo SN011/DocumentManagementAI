@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marvin the Orb</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+        body {
+            margin: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #0b0c10;
+            color: #66fcf1;
+            font-family: 'Orbitron', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body.light-mode {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+        .container {
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+        }
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #1f2833;
+            color: #66fcf1;
+            border: 1px solid #66fcf1;
+            border-radius: 5px;
+            margin: 0 5px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .tab:hover, .tab.active {
+            background-color: #66fcf1;
+            color: #0b0c10;
+        }
+        .tab-content {
+            display: none;
+            width: 90%;
+            height: 80%;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .tab-content.active {
+            display: flex;
+        }
+        .top-left {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 22px;
+            color: #66fcf1;
+            background-color: #1f2833;
+            border: 1px solid #66fcf1;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        button:hover {
+            background-color: #66fcf1;
+            color: #0b0c10;
+        }
+        #response {
+            margin-top: 20px;
+        }
+        .info-label {
+            font-weight: bold;
+        }
+        #phoneNumberInput,
+        #recEmailInput {
+            margin-top: 10px;
+        }
+        #phoneNumberDisplay,
+        #recEmailDisplay {
+            display: none;
+            margin-top: 10px;
+        }
+        #callDetailsContainer {
+            margin-top: 20px;
+            border-top: 1px solid #38ccc2;
+            padding-top: 20px;
+            text-align: left;
+            width: 90%;
+        }
+        #callLogsContainer {
+            width: 100%;
+            height: 100%;
+            overflow-y: scroll;
+            border: 1px solid #38ccc2;
+            border-radius: 5px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .call-log {
+            color: #38ccc2;
+            border: 1px solid #38ccc2;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 5px 0;
+            background-color: #1f2833;
+            transition: background-color 0.3s, color 0.3s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .call-log.light-mode {
+            color: #38ccc2;
+            border: 1px solid #38ccc2;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 5px 0;
+            background-color: #858585;
+            transition: background-color 0.3s, color 0.3s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .call-log:hover {
+            background-color: #38ccc2;
+            color: #0b0c10;
+        }
+        .call-log-time {
+            font-size: 22px;
+            color: #38ccc2;
+        }
+        #callLogsContainer::-webkit-scrollbar {
+            width: 10px;
+        }
+        #callLogsContainer::-webkit-scrollbar-track {
+            background: #1f2833;
+            border-radius: 5px;
+        }
+        #callLogsContainer::-webkit-scrollbar-thumb {
+            background: #38ccc2;
+            border-radius: 5px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #0b0c10;
+            padding: 20px;
+            border: 1px solid #38ccc2;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 10px;
+            box-sizing: border-box;
+        }
+        .close {
+            color: #38ccc2;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: #f1f1f1;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #1f2833;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        .dropdown-content a {
+            color: #38ccc2;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+        .dropdown-content a:hover {
+            background-color: #38ccc2;
+            color: #0b0c10;
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="top-left">
+        <button id="signInButton" style="display: none;">Sign In with Google</button>
+        <div class="dropdown">
+            <img id="userPicture" src="" alt="Profile Picture" width="40" height="40" style="display: none; border-radius: 50%; cursor: pointer;">
+            <div class="dropdown-content">
+                <a href="#" id="logout">Logout</a>
+                <a href="#" id="settings">Settings</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- <div class="tabs">
+        <div class="tab active" data-tab="callLogs">Call Logs</div>
+    </div> -->
+
+    <div id="callLogs" class="container tab-content active">
+        <h2>Call Logs</h2>
+        <div id="callLogsContainer">
+            <!-- Call logs will be appended here dynamically -->
+        </div>
+    </div>
+
+    <div id="callDetailsModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="callDetailsContainer">
+                <!-- Call details will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Settings</h2>
+            <label>
+                <input type="checkbox" id="toggleTheme">
+                Toggle Light/Dark Mode
+            </label>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

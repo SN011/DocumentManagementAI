@@ -18,6 +18,7 @@ CREDENTIALS_PATH = os.getenv('OLD_CREDENTIALS_PATH')
 TOKEN_PATH = 'paths/token.json'
 
 def authenticate():
+    print('Authenticating...')
     creds = None
 
     # Load existing credentials from the token file

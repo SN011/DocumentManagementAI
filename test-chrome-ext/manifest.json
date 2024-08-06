@@ -6,8 +6,7 @@
     "storage",
     "identity",
     "tabs",
-    "http://localhost/*",
-    "https://hypnos.site/*"
+    "http://localhost/*"
   ],
   "background": {
     "scripts": ["background.js"],

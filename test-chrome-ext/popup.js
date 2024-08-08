@@ -4,7 +4,7 @@ let isPlaying = false;
 let isHumanToolRequest = false;
 
 let socket = io('http://localhost:5000');
-let socket2 = io('http://localhost:5001')
+//let socket2 = io('http://localhost:5001')
 
 socket.on('connect', () => {
     console.log('Connected to server');
@@ -20,23 +20,23 @@ socket.on('tts_complete', (data) => {
     });
 });
 
-socket2.on('tts_complete', (data) => {
-    console.log('TTS synthesis complete:', data.message);
-    const audio = document.getElementById('audio');
-    audio.src = 'http://localhost:5000/get_audio?' + new Date().getTime();
-    audio.style.display = 'block';
-    audio.play().catch(error => {
-        console.error('Error playing audio:', error);
-    });
-});
+// socket2.on('tts_complete', (data) => {
+//     console.log('TTS synthesis complete:', data.message);
+//     const audio = document.getElementById('audio');
+//     audio.src = 'http://localhost:5000/get_audio?' + new Date().getTime();
+//     audio.style.display = 'block';
+//     audio.play().catch(error => {
+//         console.error('Error playing audio:', error);
+//     });
+// });
 
 socket.on('new_message', (data) => {
     displayMessage(data.message, data.sender);
 });
 
-socket2.on('new_message', (data) => {
-    displayMessage(data.message, data.sender);
-});
+// socket2.on('new_message', (data) => {
+//     displayMessage(data.message, data.sender);
+// });
 
 socket.on('request_human_input', () => {
     console.log('Server is requesting human input');
@@ -45,12 +45,12 @@ socket.on('request_human_input', () => {
     isHumanToolRequest = true;  // Mark that the next input is for the human tool
 });
 
-socket2.on('request_human_input', () => {
-    console.log('Server is requesting human input');
-    document.getElementById('textInput').disabled = false;
-    document.getElementById('sendTextButton').disabled = false;
-    isHumanToolRequest = true;  // Mark that the next input is for the human tool
-});
+// socket2.on('request_human_input', () => {
+//     console.log('Server is requesting human input');
+//     document.getElementById('textInput').disabled = false;
+//     document.getElementById('sendTextButton').disabled = false;
+//     isHumanToolRequest = true;  // Mark that the next input is for the human tool
+// });
 
 socket.on('finished_chain', () => {
     console.log('Server is saying the agent exec chain is finished');
@@ -59,12 +59,12 @@ socket.on('finished_chain', () => {
     isHumanToolRequest = false;  
 });
 
-socket2.on('finished_chain', () => {
-    console.log('Server is saying the agent exec chain is finished');
-    document.getElementById('textInput').disabled = false;
-    document.getElementById('sendTextButton').disabled = false;
-    isHumanToolRequest = false;  
-});
+// socket2.on('finished_chain', () => {
+//     console.log('Server is saying the agent exec chain is finished');
+//     document.getElementById('textInput').disabled = false;
+//     document.getElementById('sendTextButton').disabled = false;
+//     isHumanToolRequest = false;  
+// });
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded');

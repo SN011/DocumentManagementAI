@@ -1,10 +1,8 @@
 from langchain.agents import load_tools
-from groq import Groq
 import string
 import os
 import random
-from langchain_groq import ChatGroq
-from langchain_groq import ChatGroq
+from langchain_cerebras import ChatCerebras
 from langchain import hub
 from langchain.agents import create_structured_chat_agent
 from langchain.agents import AgentExecutor
@@ -28,7 +26,7 @@ from tools.imports import *
 from langchain.memory import ConversationSummaryBufferMemory
 
 
-def initialize_web_search_agent(llm:ChatGroq):
+def initialize_web_search_agent(llm:ChatCerebras):
     global mem
     mem = ConversationSummaryBufferMemory(llm=llm)
     
@@ -117,20 +115,22 @@ def initialize_web_search_agent(llm:ChatGroq):
 
     
     agent = create_structured_chat_agent(llm,tools,prompt)
-    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True, memory=mem)
+    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True, memory=mem, return_intermediate_steps=True)
 
     return agent_executor
 
 def vector_embedding():
-    embeddings = HuggingFaceEmbeddings()
-    loader = PyPDFDirectoryLoader("./finetune_docs")
-    docs = loader.load()
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    final_documents = text_splitter.split_documents(docs)
-    vectors = FAISS.from_documents(final_documents, embeddings)
+    # embeddings = HuggingFaceEmbeddings()
+    # loader = PyPDFDirectoryLoader("./finetune_docs")
+    # docs = loader.load()
+    # text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    # final_documents = text_splitter.split_documents(docs)
+    # vectors = FAISS.from_documents(final_documents, embeddings)
+    
+    vectors = FAISS.load_local('./vector_db',embeddings=HuggingFaceEmbeddings(),allow_dangerous_deserialization=True)
     return vectors
 
-async def initialize_pdf_search_agent(llm:ChatGroq, prompt1: str, vectors: FAISS, chat_history: ConversationSummaryBufferMemory):
+async def initialize_pdf_search_agent(llm:ChatCerebras, prompt1: str, vectors: FAISS, chat_history: ConversationSummaryBufferMemory):
     global mem
     mem = ConversationSummaryBufferMemory(llm=llm)
     
@@ -227,7 +227,7 @@ def parse_quote(quote_str):
 
 import queue
 
-def initialize_quote_bot(client:Groq, llm:ChatGroq, input_func: Callable[[],str], output_func: Callable[[str],str], human_response_queue: queue.Queue):
+def initialize_quote_bot(client:Cerebras, llm:ChatCerebras, input_func: Callable[[],str], output_func: Callable[[str],str], human_response_queue: queue.Queue):
     
     system_msg = """
     You are Marvin, an expert at questioning clients about their HVAC service needs to provide accurate quotes. When you speak for the first time, introduce yourself as Marvin. Ask the user specific information needed for the quote. Follow these guidelines:
@@ -299,7 +299,7 @@ def initialize_quote_bot(client:Groq, llm:ChatGroq, input_func: Callable[[],str]
                 }
             ],
 
-            model="llama3-70b-8192",
+            model="llama3.1-70b",
         )
         output = (quotebot.choices[0].message.content)
         output_func(output)
@@ -309,8 +309,8 @@ def initialize_quote_bot(client:Groq, llm:ChatGroq, input_func: Callable[[],str]
 
     
 import tools
-async def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: ConversationSummaryBufferMemory):
-    llm.groq_api_key = random.choice(tools.initialize_groq.api_keys)    
+async def run_quote_logics(client:Cerebras,llm:ChatCerebras, chat_history: ConversationSummaryBufferMemory):
+        
     consultors_list = []
     consultationbot = client.chat.completions.create(
             messages=[
@@ -322,13 +322,13 @@ async def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: ConversationS
 
                 }
             ],
-            model="llama3-70b-8192",
+            model="llama3.1-70b",
         )
     consoltation_output = (consultationbot.choices[0].message.content)
     consultors_list.append(consoltation_output)
 
 
-    llm.groq_api_key = random.choice(tools.initialize_groq.api_keys)    
+      
     quotebot = client.chat.completions.create(
             messages=[
 
@@ -346,11 +346,11 @@ async def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: ConversationS
                                 List every item explicitly. INCLUDE ADDRESS OF CLIENT AT ALL TIMES!!!! IT IS IN CHAT HISTORY!!" + "Chat History for your own context and info: [" + (chat_history.buffer) + "] AND THE Consultors List: []" + str(consultors_list) + ']'
                 }
             ],
-            model="llama3-70b-8192",
+            model="llama3.1-70b",
         )
     streamlined_output = (quotebot.choices[0].message.content)
     
-    llm.groq_api_key = random.choice(tools.initialize_groq.api_keys)    
+      
     agent_executor = initialize_web_search_agent(llm=llm)
     agent_executor.memory = chat_history
     output = agent_executor.invoke({"input":"YOU MUST SEARCH FOR WALTER HVAC SERVICES - CHANTILLY VIRGINIA IN THE SEARCH RESULTS LIKE WHAT SERVICES THEY OFFER AND WHAT IS THE COST. ALSO SEARCH THE FOLLOWING IN WEB:  Given the chat history --> "+streamlined_output+"<-- AS WELL AS THE CONSULTANT'S INFORMATION -->" + consoltation_output + " --> look for labor and material costs for whatever the user asked for in the AREA NEAR ADDRESS OF USERS PROPERTY. ALSO use the costs of A/C units and HVAC related things very near to THE SAME LOCATION AS/NEAR TO  THE ADDRESS to decide on the cost. BE VERY SPECIFIC. LOTS OF NUMBERS. Also for material costs only use the consultants information, and search up the materials individually to find the price."})
@@ -382,7 +382,7 @@ async def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: ConversationS
     #     ctr += 1
 
     # print(newstr)
-    llm.groq_api_key = random.choice(tools.initialize_groq.api_keys)    
+      
     quotebot2 = client.chat.completions.create(
             messages=[
 
@@ -432,12 +432,12 @@ async def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: ConversationS
                                 " + "User's request for your own context and info: " + str(output)
                 }
             ],
-            model="llama3-70b-8192",
+            model="llama3.1-70b",
         )
     output2 = (quotebot2.choices[0].message.content)
     print(output2)
 
-    llm.groq_api_key = random.choice(tools.initialize_groq.api_keys)    
+      
     quote_dict_corrected = parse_quote(output2)
     corrector = client.chat.completions.create(
             messages=[
@@ -464,7 +464,7 @@ async def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: ConversationS
                         "MONTHLY PAYMENT " + str(quote_dict_corrected.get("payment_terms",None).get("payment_schedule",None)) + "." 
                 }
             ],
-            model="llama3-70b-8192",
+            model="llama3.1-70b",
         )
     corrector_output = (corrector.choices[0].message.content)
     print('CORRECTED MATH OUTPUT\n\n\n\n\n\n',corrector_output)
@@ -474,7 +474,7 @@ async def run_quote_logics(client:Groq,llm:ChatGroq, chat_history: ConversationS
 from contextlib import contextmanager
 class CtxMgr:
     @contextmanager
-    def temporary_temperature(self,llm:ChatGroq, new_temp:float):
+    def temporary_temperature(self,llm:ChatCerebras, new_temp:float):
         original_temp = llm.temperature  # Store the original temperature
         llm.temperature = new_temp  # Set the temperature to the temporary value
         try:

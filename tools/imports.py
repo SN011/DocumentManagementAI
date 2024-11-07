@@ -46,4 +46,5 @@ from docx import Document
 #Groq Related Imports
 from groq import Groq
 from langchain_groq import ChatGroq
-
+from langchain_cerebras import ChatCerebras
+from cerebras.cloud.sdk import Cerebras

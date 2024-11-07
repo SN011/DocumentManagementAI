@@ -4,8 +4,9 @@ from tools.auth import authenticate
 from tools.file_mgmt_tools import DriveDictUpdateTool
 
 class GoogleDriveUploadTool(BaseTool):
-    name = "GoogleDriveUploadTool"
-    description = ("Uploads a PDF to Google Drive and sets permissions for a specific user. "
+    name:str = "GoogleDriveUploadTool"
+    
+    description :str =("Uploads a PDF to Google Drive and sets permissions for a specific user. "
                    "Please set the 'rename' parameter to None if the user does not want to rename the file before uploading "
                    "to Google Drive. STOP AFTER ONE-TIME SUCCESSFUL EXECUTION")
 
@@ -72,8 +73,9 @@ class GoogleDriveUploadTool(BaseTool):
 
 
 class GoogleSheetsUpdateTool(BaseTool):
-    name = "GoogleSheetsUpdateTool"
-    description = ("Appends rows to a specified range in a Google Sheets spreadsheet.")
+    name:str = "GoogleSheetsUpdateTool"
+    
+    description :str =("Appends rows to a specified range in a Google Sheets spreadsheet.")
 
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
 
@@ -117,8 +119,8 @@ class GoogleSheetsUpdateTool(BaseTool):
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 from tools.file_mgmt_tools import ImprovedSearchTool
 class GoogleSheetsCreateTool(BaseTool):
-    name = "GoogleSheetsCreateTool"
-    description = ("Creates a new Google Sheets spreadsheet with specified column headers.")
+    name:str = "GoogleSheetsCreateTool"
+    description :str =("Creates a new Google Sheets spreadsheet with specified column headers.")
 
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
 
@@ -181,8 +183,8 @@ class GoogleSheetsCreateTool(BaseTool):
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']
 
 class GmailSendPdfTool(BaseTool):
-    name = "GmailSendPdfTool"
-    description = "Sends an email with an optional PDF attachment using Gmail API."
+    name:str = "GmailSendPdfTool"
+    description :str ="Sends an email with an optional PDF attachment using Gmail API."
 
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
 
@@ -238,8 +240,8 @@ class GmailSendPdfTool(BaseTool):
 import datetime
 
 class AppointmentBookingCalendarTool(BaseTool):
-    name = "AppointmentBookingCalendarTool"
-    description = "Books appointments by confirming dates in Google Calendar via OAuth, then confirms with the user, and then populates the correct calendar cell with all details provided by the user."
+    name:str = "AppointmentBookingCalendarTool"
+    description :str ="Books appointments by confirming dates in Google Calendar via OAuth, then confirms with the user, and then populates the correct calendar cell with all details provided by the user."
 
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
 

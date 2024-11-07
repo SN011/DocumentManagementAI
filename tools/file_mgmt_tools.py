@@ -5,8 +5,8 @@ from tools.auth import authenticate
 SCOPES = ['https://www.googleapis.com/auth/drive']
 
 class CreateFolderTool(BaseTool):
-    name = "CreateFolderTool"
-    description = "Creates a new folder in Google Drive using OAuth 2.0 for secure user authentication. USED TO CREATE A SINGLE FOLDER. IF PARENT_FOLDER_ID IS GIVEN, THE FOLDER WILL BE CREATED WITHIN THAT PARENT FOLDER."
+    name:str ="CreateFolderTool"
+    description :str ="Creates a new folder in Google Drive using OAuth 2.0 for secure user authentication. USED TO CREATE A SINGLE FOLDER. IF PARENT_FOLDER_ID IS GIVEN, THE FOLDER WILL BE CREATED WITHIN THAT PARENT FOLDER."
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
 
     class Config:
@@ -21,7 +21,7 @@ class CreateFolderTool(BaseTool):
     def search_folder(self, folder_name: str, parent_folder_id: str = None):
         """Search for a folder by name in Google Drive."""
         try:
-            query = f"name = '{folder_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
+            query = f"name:str ='{folder_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
             if parent_folder_id:
                 query += f" and '{parent_folder_id}' in parents"
             results = self.service.files().list(q=query, fields="files(id, name)").execute()
@@ -81,8 +81,8 @@ class CreateFolderTool(BaseTool):
 SCOPES = ['https://www.googleapis.com/auth/drive']
 
 class MoveFileTool(BaseTool):
-    name = "MoveFileTool"
-    description = "Moves a file within Google Drive using OAuth 2.0 for secure user authentication. It searches for a file by name and moves it to the specified folder. BASICALLY USED TO MOVE A FILE INTO A FOLDER"
+    name:str ="MoveFileTool"
+    description :str ="Moves a file within Google Drive using OAuth 2.0 for secure user authentication. It searches for a file by name and moves it to the specified folder. BASICALLY USED TO MOVE A FILE INTO A FOLDER"
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
 
     class Config:
@@ -147,8 +147,8 @@ class MoveFileTool(BaseTool):
 SCOPES = ['https://www.googleapis.com/auth/drive']
 
 class FolderMovementTool(BaseTool):
-    name = "FolderMovementTool"
-    description = "MOVES ONE FOLDER TO ANOTHER AS WELL AS ALL CONTENTS in Google Drive using OAuth 2.0 for secure user authentication. Provides functionality to move folders and their contents, BASICALLY USE THIS TO MOVE A FOLDER INTO ANOTHER FOLDER."
+    name:str ="FolderMovementTool"
+    description :str ="MOVES ONE FOLDER TO ANOTHER AS WELL AS ALL CONTENTS in Google Drive using OAuth 2.0 for secure user authentication. Provides functionality to move folders and their contents, BASICALLY USE THIS TO MOVE A FOLDER INTO ANOTHER FOLDER."
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
 
     class Config:
@@ -260,8 +260,8 @@ class FolderMovementTool(BaseTool):
 SCOPES = ['https://www.googleapis.com/auth/drive']
 
 class FileOrganizerTool(BaseTool):
-    name = "FileOrganizerTool"
-    description = "Organizes files in ANY SPECIFIED FOLDER by segregating them based on type and moving them to respective folders using OAuth 2.0 for secure user authentication. DOES NOT CREATE FOLDERS"
+    name:str ="FileOrganizerTool"
+    description :str ="Organizes files in ANY SPECIFIED FOLDER by segregating them based on type and moving them to respective folders using OAuth 2.0 for secure user authentication. DOES NOT CREATE FOLDERS"
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
 
     class Config:
@@ -291,13 +291,13 @@ class FileOrganizerTool(BaseTool):
     def create_folder_if_not_exists(self, folder_name: str, parent_folder_id=None):
         """Create a folder in Google Drive if it doesn't already exist."""
         try:
-            unique_folder_name = folder_name
+            unique_folder_name:str =folder_name
             if parent_folder_id:
                 parent_folder = self.service.files().get(fileId=parent_folder_id, fields="name").execute()
                 unique_folder_name += f"_{parent_folder['name']}"
             else:
                 unique_folder_name += f"_MyDrive"
-            query = f"name = '{unique_folder_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
+            query = f"name:str ='{unique_folder_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
             if parent_folder_id:
                 query += f" and '{parent_folder_id}' in parents"
             results = self.service.files().list(q=query, fields="files(id, name)").execute()
@@ -367,7 +367,7 @@ class FileOrganizerTool(BaseTool):
         }
 
         for file in files:
-            folder_name = folder_mapping.get(file['mimeType'], 'Others')
+            folder_name:str =folder_mapping.get(file['mimeType'], 'Others')
             folder_id = self.create_folder_if_not_exists(folder_name, parent_folder_id)
             if folder_id:
                 res = DriveDictUpdateTool(self.credentials_path).update_with_new_item(folder_id)
@@ -399,8 +399,8 @@ class FileOrganizerTool(BaseTool):
 SCOPES = ['https://www.googleapis.com/auth/drive']
 
 class ImprovedSearchTool(BaseTool):
-    name = "ImprovedSearchTool"
-    description = "RETRIEVES ALL GOOGLE DRIVE FILES AND FOLDERS AND SEARCHES FOR A MATCH, WHEN THE NAME OR ID OF THE ITEM IS INPUTTED. Pass in the name AND/OR ID of the item requested. If multiple matches are found, it lists them and asks the user to select the correct one."
+    name:str ="ImprovedSearchTool"
+    description :str ="RETRIEVES ALL GOOGLE DRIVE FILES AND FOLDERS AND SEARCHES FOR A MATCH, WHEN THE NAME OR ID OF THE ITEM IS INPUTTED. Pass in the name AND/OR ID of the item requested. If multiple matches are found, it lists them and asks the user to select the correct one."
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
 
     class Config:
@@ -600,8 +600,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 class DriveDictUpdateTool(BaseTool):
-    name = "DriveDictUpdateTool"
-    description = "Updates the dictionary of Google Drive files and writes them to JSON files in batches."
+    name:str ="DriveDictUpdateTool"
+    description :str ="Updates the dictionary of Google Drive files and writes them to JSON files in batches."
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
  
     class Config:
@@ -763,8 +763,8 @@ class DriveDictUpdateTool(BaseTool):
         raise NotImplementedError("This tool does not support asynchronous operation yet.")
     
 class GoogleDriveRenameTool(BaseTool):
-    name = "GoogleDriveRenameTool"
-    description = ("Renames a file in Google Drive, given the old file name.")
+    name:str ="GoogleDriveRenameTool"
+    description :str =("Renames a file in Google Drive, given the old file name.")
 
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
 
@@ -792,7 +792,7 @@ class GoogleDriveRenameTool(BaseTool):
     def _run(self, file_name: str, file_id: str, new_name: str, **kwargs):
         """Run the tool to rename a file with the given file ID to the new name."""
         if file_name and not file_id:
-            return f"Use ImprovedSearch tool to get the ID of the file with file_name = {file_name} and pass in both the file_id and file_name. FOLLOW ALL THE DIRECTIONS GIVEN."
+            return f"Use ImprovedSearch tool to get the ID of the file with file_name:str ={file_name} and pass in both the file_id and file_name. FOLLOW ALL THE DIRECTIONS GIVEN."
         
         updated_file = self.rename_file(file_id, new_name)
         self.update_tool.update_with_new_item(file_id)

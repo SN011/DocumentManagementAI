@@ -5,3 +5,4 @@ leetcode/
 tools/__pycache__/
 
 drive_batches/
+.env

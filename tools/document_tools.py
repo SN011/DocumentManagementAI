@@ -1,3 +1,4 @@
+from pydantic import root_validator
 from tools.imports import *
 import tools.initialize_groq
 from tools.auth import authenticate
@@ -10,19 +11,36 @@ SCOPES = ['https://www.googleapis.com/auth/documents', 'https://www.googleapis.c
 
 
 class GoogleDocWriteTool(BaseTool):
-    name="GoogleDocWriteTool"
-    description="Writes any amount of content to a Google Doc with professional formatting. Inputs are the text to write, and whether to append or not, as well as document name"
+    name:str ="GoogleDocWriteTool"
+    description:str="Writes any amount of content to a Google Doc with professional formatting. Inputs are the text to write, and whether to append or not, as well as document name"
     credentials_path: str = Field(..., description="Path to the credentials JSON file")
 
     class Config:
         extra = Extra.allow
 
-    def __init__(self, credentials_path: str):
-        super().__init__()
-        self.credentials_path = credentials_path
-        self.creds = authenticate()
-        self.docs_service = build('docs', 'v1', credentials=self.creds)
-        self.drive_service = build('drive', 'v3', credentials=self.creds)        
+    # def __init__(self, credentials_path: str):
+    #     super().__init__()
+        
+    #     self.credentials_path = credentials_path
+    #     self.creds = authenticate()
+    #     self.docs_service = build('docs', 'v1', credentials=self.creds)
+    #     self.drive_service = build('drive', 'v3', credentials=self.creds)   
+    # 
+    @root_validator(pre=True)
+    def initialize_services(cls, values):
+        credentials_path = values.get("credentials_path")
+        
+        # Ensure the credentials_path is provided and the file exists
+        if not credentials_path or not os.path.exists(credentials_path):
+            raise ValueError("Valid credentials_path is required")
+
+        # Use the path to authenticate and initialize services
+        creds = authenticate()
+        values['creds'] = creds
+        values['docs_service'] = build('docs', 'v1', credentials=creds)
+        values['drive_service'] = build('drive', 'v3', credentials=creds)
+        
+        return values     
     
     
     def make_docmgr_write_to_file(self, cc_out):
